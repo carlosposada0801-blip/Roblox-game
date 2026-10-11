@@ -1,0 +1,4 @@
+# Toolchain pinned with Rokit (https://github.com/rojo-rbx/rokit).
+# Aftman users: copy this [tools] section into aftman.toml instead.
+[tools]
+rojo = "rojo-rbx/rojo@7.4.4"
