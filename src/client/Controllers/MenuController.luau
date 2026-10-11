@@ -24,6 +24,7 @@ local MENU = {
 	{ Name = "Players", Icon = "👥", Color = Color3.fromRGB(60, 120, 255), Panel = "PlayersPanel" },
 	{ Name = "Daily", Icon = "🎁", Color = Theme.Pink, Panel = "DailyPanel", Badge = "Daily" },
 	{ Name = "Armory", Icon = "⚔️", Color = Theme.Red, Panel = "ArmoryPanel" },
+	{ Name = "More", Icon = "☰", Color = Theme.Cyan, Panel = "MorePanel" },
 }
 
 local MenuController = {}
@@ -140,6 +141,23 @@ function MenuController:Start()
 			player:GetAttributeChangedSignal("QuestsJson"):Connect(update)
 			update()
 		end
+	end
+
+	-- Windows opened from the More hub (no menu button of their own)
+	local MorePanel = require(Panels.MorePanel)
+	for _, entry in ipairs(MorePanel.Entries) do
+		local ok, window = pcall(function()
+			return require(Panels[entry.Panel]).build()
+		end)
+		if ok then
+			window.Parent = root
+			windows[entry.Name] = window
+		else
+			warn("[Menu] Couldn't build " .. entry.Panel .. ": " .. tostring(window))
+		end
+	end
+	MorePanel.OnOpen = function(name)
+		self:Open(name)
 	end
 
 	-- Daily reward waiting? Pop it open after a moment.

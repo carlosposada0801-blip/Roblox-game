@@ -12,7 +12,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local QuestConfig = require(Shared.Config.QuestConfig)
 
-local DataService, EconomyService, PlayerService, Net
+local DataService, EconomyService, PlayerService, ContractService, Net
 
 local QuestService = {}
 
@@ -75,6 +75,7 @@ function QuestService:Track(player: Player, stat: string, amount: number?)
 	if not data then
 		return
 	end
+	ContractService:Track(player, stat, amount)
 	refresh(player)
 	local changed = false
 	for _, entry in ipairs(data.Quests.List) do
@@ -116,6 +117,7 @@ function QuestService:Init(services)
 	DataService = services.DataService
 	EconomyService = services.EconomyService
 	PlayerService = services.PlayerService
+	ContractService = services.ContractService
 	Net = services.Net
 end
 

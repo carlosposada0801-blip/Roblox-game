@@ -1,7 +1,7 @@
 --[[
 	DevCommands (Studio only)
-	Chat commands for testing. Main only loads this module when
-	RunService:IsStudio() is true, so they never exist in a live server.
+	Chat commands for testing and admin. They work for everyone in Studio,
+	and in a live game only for the game's creator and AdminConfig.Admins.
 
 	  /cash <amount>     add cash (default 1000)
 	  /robots <amount>   add robots for hiring workers (default 10)
@@ -15,12 +15,24 @@
 	  /pet <type>        get a pet: Bolt, Gear, Spark, Nova, Pulse, Omega, Celestia
 	  /daily             make today's daily reward claimable again
 	  /quests            finish all of today's quests
+	  /balance [rebirths] print the economy timeline (how long each purchase takes)
+	  /boss              start a boss raid now
+	  /drones            send rogue drones to your factory
 	  /save              force a save right now
 	  /wipe              reset your data to a new player's and kick you
 	  /help              list commands
 ]]
 
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+
+local AdminConfig = require(ReplicatedStorage:WaitForChild("Shared").Config.AdminConfig)
+local BalanceModel = require(ReplicatedStorage.Shared.Util.BalanceModel)
+
+local function isAdmin(player)
+	return RunService:IsStudio() or player.UserId == game.CreatorId or table.find(AdminConfig.Admins, player.UserId) ~= nil
+end
 
 local DevCommands = {}
 
@@ -115,6 +127,18 @@ function DevCommands:Init(services)
 		end
 	end
 
+	commands["/balance"] = function(_, args)
+		print(BalanceModel.report(tonumber(args[2]) or 0))
+	end
+
+	commands["/boss"] = function()
+		services.BossService:Spawn()
+	end
+
+	commands["/drones"] = function(player)
+		services.DefenseService:SpawnRaid(player)
+	end
+
 	commands["/save"] = function(player)
 		local ok = DataService:SaveAsync(player)
 		print(("[Dev] Save for %s: %s"):format(player.Name, ok and "OK" or "FAILED"))
@@ -126,14 +150,14 @@ function DevCommands:Init(services)
 	end
 
 	commands["/help"] = function()
-		print("[Dev] Commands: /cash, /robots, /unlockall, /prototype, /pass, /buy, /rebirths, /event, /pet, /daily, /quests, /save, /wipe, /help")
+		print("[Dev] Commands: /cash, /robots, /unlockall, /prototype, /pass, /buy, /rebirths, /event, /pet, /daily, /quests, /balance, /boss, /drones, /save, /wipe, /help")
 	end
 
 	local function hook(player)
 		player.Chatted:Connect(function(message)
 			local args = string.split(message, " ")
 			local command = commands[string.lower(args[1])]
-			if command and DataService:GetProfile(player) then
+			if command and isAdmin(player) and DataService:GetProfile(player) then
 				command(player, args)
 			end
 		end)

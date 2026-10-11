@@ -16,6 +16,10 @@
 	  * Rocket: a server-simulated projectile that explodes on impact.
 	Knockouts give cash (x rebirth multiplier); arena knockouts also score
 	round points.
+
+	Targets: other services register non-player targets (raid boss, rogue
+	drones) with RegisterTarget. Weapons hit them, and players can also
+	click/tap them. Everyone is armed while a boss raid is on.
 ]]
 
 local Debris = game:GetService("Debris")
@@ -38,6 +42,7 @@ for _, weapon in ipairs(WeaponConfig.Weapons) do
 	weaponsById[weapon.Id] = weapon
 end
 
+local targets = {} -- [Model] = { OnDamage = fn(player, amount), Radius = number }
 local lastHit = {} -- [victim] = { Attacker, Time }
 local lastCombat = {} -- [player] = os.clock() of last hit given or taken
 local cooldowns = {} -- [player] = { [weaponId] = os.clock() }
@@ -62,7 +67,59 @@ function CombatService:IsHostile(a: Player, b: Player): boolean
 end
 
 local function isArmed(player)
-	return player:GetAttribute("InArena") == true or player:GetAttribute("PvP") == true
+	return player:GetAttribute("InArena") == true
+		or player:GetAttribute("PvP") == true
+		or workspace:GetAttribute("BossActive") == true
+end
+
+-- Non-player targets ----------------------------------------------------------------
+
+function CombatService:RegisterTarget(model: Model, onDamage, clickDamage: number?, radius: number?)
+	targets[model] = { OnDamage = onDamage, Radius = radius or 4 }
+	local clickPart = model.PrimaryPart
+	if clickPart and clickDamage then
+		local detector = Instance.new("ClickDetector")
+		detector.MaxActivationDistance = 120
+		detector.Parent = clickPart
+		local lastClick = {}
+		detector.MouseClick:Connect(function(player)
+			if os.clock() - (lastClick[player] or 0) < 0.25 or not alive(player) then
+				return
+			end
+			lastClick[player] = os.clock()
+			onDamage(player, clickDamage)
+		end)
+	end
+	model.Destroying:Connect(function()
+		targets[model] = nil
+	end)
+end
+
+function CombatService:UnregisterTarget(model: Model)
+	targets[model] = nil
+end
+
+local function targetFromPart(part)
+	local current = part
+	while current and current ~= workspace do
+		if targets[current] then
+			return current, targets[current]
+		end
+		current = current.Parent
+	end
+	return nil
+end
+
+local function hitTargetsInRadius(player, position, radius, amount, facing)
+	for model, target in pairs(targets) do
+		if model.Parent then
+			local offset = model:GetPivot().Position - position
+			local reach = radius + target.Radius
+			if offset.Magnitude <= reach and (not facing or offset.Magnitude < 0.1 or facing:Dot(offset.Unit) > 0) then
+				target.OnDamage(player, amount)
+			end
+		end
+	end
 end
 
 function CombatService:Damage(attacker: Player, victim: Player, amount: number)
@@ -157,6 +214,7 @@ local function onMelee(tool, weapon)
 			end
 		end
 	end
+	hitTargetsInRadius(player, root.Position, weapon.Range, weapon.Damage, root.CFrame.LookVector)
 end
 
 local function buildTool(weapon)
@@ -336,6 +394,7 @@ local function explode(attacker, weapon, position)
 			end
 		end
 	end
+	hitTargetsInRadius(attacker, position, weapon.Radius, weapon.Damage)
 end
 
 local function launchRocket(attacker, weapon, origin, direction, ignore)
@@ -414,6 +473,11 @@ local function fireWeapon(player, weaponId, target)
 	local victim = result and playerFromPart(result.Instance)
 	if victim then
 		CombatService:Damage(player, victim, weapon.Damage)
+	elseif result then
+		local _, hitTarget = targetFromPart(result.Instance)
+		if hitTarget then
+			hitTarget.OnDamage(player, weapon.Damage)
+		end
 	end
 	Net:FireAll("Fx", "Shot", origin + direction * 1.5, hitPosition, weapon.Color)
 end
@@ -487,6 +551,15 @@ local function setupPlayer(player)
 	player:GetAttributeChangedSignal("Prototypes"):Connect(function()
 		CombatService:RefreshWeapons(player)
 	end)
+end
+
+-- Re-checks everyone's weapons (e.g. when a boss raid starts or ends)
+function CombatService:RefreshAll()
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player:GetAttribute("DataLoaded") then
+			self:RefreshWeapons(player)
+		end
+	end
 end
 
 function CombatService:Init(services)

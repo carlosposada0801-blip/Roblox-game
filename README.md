@@ -18,6 +18,8 @@ and take your rare Prototype robots into a shared PvP arena.
 
 ---
 
+> **Going live?** Follow [LAUNCH.md](LAUNCH.md): store items, badges, server size, thumbnails, testing.
+
 ## Opening the game
 
 **Easiest:** open `RobotFactoryTycoon.rbxlx` in Roblox Studio and press **Play**.
@@ -84,6 +86,20 @@ then Studio → Plugins → Rojo → Connect. `rojo build -o RobotFactoryTycoon.
 | 🏢 3rd floor | After **5 rebirths**: lift pads from the 2nd floor, Plasma Droppers, Fusion Reactor and Mega Assembler | `ItemConfig` |
 | ⚔️ Weapons and PvP | Unlock weapons in the **Armory**: Robo Sword, Laser Blaster, Plasma Hammer, Shock Rifle, Rocket Launcher, and the Prototype Cannon (free with a Prototype). They work in the arena, or anywhere when both players switch **PvP on**. Hits are checked by the server | `WeaponConfig` |
 | 🌌 Galaxy Egg | A third, pricier egg ($2.5M) with the Mythic **Quasar** pet (+350% cash) | `PetConfig` |
+| ☠️ Boss raids | Every 15 min the Omega Destroyer lands in the lobby; everyone gets weapons (or click/tap it); damage share = loot | `BossConfig` |
+| 🚨 Factory defense | Rogue drones raid cash pads and drain cash until you click/shoot them | `DefenseConfig` |
+| 🏁 Robot races | Enter your race bot, upgrade it with robots, prizes for the top 3; watch at the 🏁 portal | `RaceConfig` |
+| 📜 Contracts | Timed jobs with big rewards | `ContractConfig` |
+| ⛏️ Crystal mine | Mine ore (portal in the lobby), sell it or craft Machine Cores (+10% machine value each) | `MiningConfig` |
+| ✨ Ascension | At 10 rebirths: reset for x2 cash forever and a new factory theme (Space Station, Underwater Lab, Volcano Forge) | `AscensionConfig` |
+| 🏅 Achievements and badges | 22 achievements, Roblox badges and titles shown overhead and in chat | `AchievementConfig` |
+| 🌠 Style | Trails and factory accent colors (cash or achievements) | `CosmeticConfig` |
+| 🤝 Co-op | Invite friends to build your factory with you (Players menu → BUILD) | — |
+| 🛡️ Crews | Cross-server clans with a bank, levels (+5% cash each) and a Top Crews board | `CrewConfig` |
+| 🎃 Seasons | Auto Halloween / Winter events with decorations and a limited egg | `SeasonConfig` |
+| 🎓 Tutorial | Step-by-step guide for new players with a reward | `TutorialConfig` |
+| ⭐ Premium and Starter Pack | +10% cash for Roblox Premium; one-time Starter Pack product | `MonetizationConfig` |
+| 📊 Balance tool | `/balance` prints how long every purchase takes (admins/Studio) | `BalanceModel` |
 | 🎨 Look and feel | Hazard-striped plots, industrial gates with spinning gears, machine fire/sparks/paint effects, moving belt arrows, factory skyline with smokestacks, robot mascots, hologram title, sci-fi UI, confetti, screen flash on rebirth | `SceneryConfig`, `ItemConfig` |
 
 ---
@@ -247,6 +263,9 @@ loop handles all plots.
 | `/pet Omega` | Get a pet (`Bolt`, `Gear`, `Spark`, `Nova`, `Pulse`, `Omega`, `Celestia`) |
 | `/daily` | Make today's daily reward claimable again |
 | `/quests` | Finish all of today's quests |
+| `/balance 0` | Economy timeline at 0 rebirths |
+| `/boss` | Start a boss raid now |
+| `/drones` | Send rogue drones to your factory |
 | `/save` | Save now |
 | `/wipe` | Reset your save and kick you |
 

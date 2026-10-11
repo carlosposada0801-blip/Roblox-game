@@ -47,6 +47,7 @@ MonetizationConfig.GamePasses = {
 }
 
 MonetizationConfig.DoubleCashMultiplier = 2
+MonetizationConfig.PremiumBonus = 0.1 -- Roblox Premium members earn +10% cash
 MonetizationConfig.FasterConveyorMultiplier = 1.5
 
 -- Kind: "Cash" | "NextUpgrade" | "Prototype"
@@ -90,6 +91,18 @@ MonetizationConfig.Products = {
 		Kind = "NextUpgrade",
 		FallbackCash = 25000, -- given instead if everything is already unlocked
 		Order = 4,
+	},
+	StarterPack = {
+		Id = 0,
+		DisplayName = "Starter Pack",
+		Description = "$25K, 10 robots and a Gear pet. One-time deal for new bosses!",
+		Icon = "🎒",
+		PriceText = "R$ 49",
+		Kind = "StarterPack",
+		Cash = 25000,
+		Robots = 10,
+		Pet = "Gear",
+		Order = 0,
 	},
 	Prototype = {
 		Id = 0,

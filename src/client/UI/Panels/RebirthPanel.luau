@@ -11,6 +11,7 @@ local TweenService = game:GetService("TweenService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local RebirthConfig = require(Shared.Config.RebirthConfig)
+local AscensionConfig = require(Shared.Config.AscensionConfig)
 local Format = require(Shared.Util.Format)
 local UIKit = require(script.Parent.Parent.UIKit)
 local Net = require(script.Parent.Parent.Parent.Net)
@@ -21,7 +22,7 @@ local player = Players.LocalPlayer
 local RebirthPanel = {}
 
 function RebirthPanel.build()
-	local window, content = UIKit.window("🔄 Rebirth", Theme.Purple, Vector2.new(520, 430))
+	local window, content = UIKit.window("🔄 Rebirth", Theme.Purple, Vector2.new(520, 500))
 
 	local levelLabel = UIKit.label({ Size = UDim2.new(1, 0, 0, 44), Font = Theme.Title, MaxTextSize = 40, Parent = content })
 	local multiplierLabel = UIKit.label({
@@ -63,7 +64,7 @@ function RebirthPanel.build()
 		Text = "REBIRTH",
 		Color = Theme.Purple,
 		AnchorPoint = Vector2.new(0.5, 1),
-		Position = UDim2.fromScale(0.5, 1),
+		Position = UDim2.new(0.5, 0, 1, -64),
 		Size = UDim2.new(0.6, 0, 0, 56),
 		Parent = content,
 	}, function()
@@ -103,6 +104,40 @@ function RebirthPanel.build()
 	cash.Changed:Connect(update)
 	rebirths.Changed:Connect(update)
 	update()
+
+	-- Ascension (prestige)
+	local ascend = UIKit.button({
+		AnchorPoint = Vector2.new(0.5, 1),
+		Position = UDim2.fromScale(0.5, 1),
+		Size = UDim2.new(1, 0, 0, 52),
+		Color = Color3.fromRGB(255, 200, 40),
+		Parent = content,
+	}, function()
+		local ascensions = player:GetAttribute("Ascensions") or 0
+		local nextTheme = AscensionConfig.Themes[ascensions + 1]
+		UIKit.confirm(
+			"✨ Ascend?",
+			("Resets your rebirths, cash and factory. You get x%d cash FOREVER%s."):format(
+				AscensionConfig.MultiplierPerAscension ^ (ascensions + 1),
+				if nextTheme then " and the " .. nextTheme.Name .. " theme" else ""
+			),
+			"ASCEND!",
+			function()
+				Net.Fire("Ascend")
+			end
+		)
+	end)
+	local function updateAscend()
+		local ascensions = player:GetAttribute("Ascensions") or 0
+		local ready = rebirths.Value >= AscensionConfig.RequiredRebirths
+		ascend.Text = if ready
+			then ("✨ ASCEND (level %d → %d)"):format(ascensions, ascensions + 1)
+			else ("✨ ASCEND at %d rebirths (level %d)"):format(AscensionConfig.RequiredRebirths, ascensions)
+		ascend:SetAttribute("Disabled", not ready)
+	end
+	rebirths.Changed:Connect(updateAscend)
+	player:GetAttributeChangedSignal("Ascensions"):Connect(updateAscend)
+	updateAscend()
 
 	return window
 end

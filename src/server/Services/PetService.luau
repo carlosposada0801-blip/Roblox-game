@@ -96,6 +96,10 @@ local function hatch(player, eggId)
 	if not (egg and data) then
 		return
 	end
+	if egg.Season and workspace:GetAttribute("Season") ~= egg.Season then
+		Net:Notify(player, egg.DisplayName .. " is only available during its season.", "error")
+		return
+	end
 	if #data.Pets >= PetConfig.MaxInventory then
 		Net:Notify(player, "Your pet inventory is full. Delete a pet first.", "error")
 		return

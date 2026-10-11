@@ -17,11 +17,11 @@ local RebirthConfig = require(Shared.Config.RebirthConfig)
 local MonetizationConfig = require(Shared.Config.MonetizationConfig)
 local Format = require(Shared.Util.Format)
 
-local DataService, PetService, RobotBookService, EventService, QuestService
+local DataService, PetService, RobotBookService, EventService, QuestService, AscensionService, CrewService
 
 local EconomyService = {}
 
-local MIRRORED_STATS = { "PendingCash", "Robots", "RobotsBuilt", "Prototypes" }
+local MIRRORED_STATS = { "PendingCash", "Robots", "RobotsBuilt", "Prototypes", "Ascensions" }
 
 local function isValidAmount(amount)
 	return type(amount) == "number" and amount == amount and amount >= 0 and amount < math.huge
@@ -53,6 +53,8 @@ function EconomyService:Init(services)
 	RobotBookService = services.RobotBookService
 	EventService = services.EventService
 	QuestService = services.QuestService
+	AscensionService = services.AscensionService
+	CrewService = services.CrewService
 end
 
 -- Called once per player after their data loads.
@@ -114,6 +116,15 @@ function EconomyService:GetEarnMultiplier(player: Player): number
 	end
 	if EventService then
 		multiplier *= EventService:GetValue("CashMultiplier", 1)
+	end
+	if AscensionService then
+		multiplier *= AscensionService:GetMultiplier(player)
+	end
+	if CrewService then
+		multiplier *= CrewService:GetMultiplier(player)
+	end
+	if player.MembershipType == Enum.MembershipType.Premium then
+		multiplier *= 1 + MonetizationConfig.PremiumBonus
 	end
 	-- Round to 2 decimals so the HUD shows e.g. x3.15
 	return math.floor(multiplier * 100 + 0.5) / 100
@@ -211,6 +222,18 @@ function EconomyService:CollectPending(player: Player): number
 	data.TotalEarned += whole
 	sync(player, data)
 	return whole
+end
+
+-- Removes a fraction of the cash waiting on the pad (rogue drones). Returns the amount taken.
+function EconomyService:TakePending(player: Player, fraction: number): number
+	local data = DataService:GetData(player)
+	if not data or data.PendingCash <= 0 then
+		return 0
+	end
+	local amount = data.PendingCash * math.clamp(fraction, 0, 1)
+	data.PendingCash -= amount
+	player:SetAttribute("PendingCash", math.floor(data.PendingCash))
+	return amount
 end
 
 -- Changes a numeric stat (Robots, Prototypes, ...) and mirrors it.

@@ -90,7 +90,7 @@ local function playHatch(petType, eggId)
 end
 
 function PetsPanel.build()
-	local window, content = UIKit.window("🛸 PETS", Theme.Purple, Vector2.new(700, 540))
+	local window, content = UIKit.window("🛸 PETS", Theme.Purple, Vector2.new(780, 540))
 
 	-- Eggs
 	local eggRow = UIKit.create("Frame", {
@@ -98,8 +98,16 @@ function PetsPanel.build()
 		BackgroundTransparency = 1,
 		Parent = content,
 	}, { UIKit.create("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 10) }) })
+	-- Seasonal eggs only show while their season is on
+	local season = workspace:GetAttribute("Season") or ""
+	local eggs = {}
 	for _, egg in ipairs(PetConfig.Eggs) do
-		local card = UIKit.card({ Size = UDim2.new(1 / #PetConfig.Eggs, -7, 1, 0), Parent = eggRow }, egg.Color)
+		if not egg.Season or egg.Season == season then
+			table.insert(eggs, egg)
+		end
+	end
+	for _, egg in ipairs(eggs) do
+		local card = UIKit.card({ Size = UDim2.new(1 / #eggs, -7, 1, 0), Parent = eggRow }, egg.Color)
 		UIKit.label({ Position = UDim2.fromOffset(8, 8), Size = UDim2.fromOffset(60, 60), Text = egg.Icon, MaxTextSize = 50, Parent = card })
 		UIKit.label({ Position = UDim2.fromOffset(74, 8), Size = UDim2.new(1, -82, 0, 26), Font = Theme.Title, Text = string.upper(egg.DisplayName), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 22, Parent = card })
 		UIKit.label({ Position = UDim2.fromOffset(74, 34), Size = UDim2.new(1, -82, 0, 34), Text = chancesText(egg), TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, TextColor3 = Theme.SubText, MaxTextSize = 12, Parent = card })

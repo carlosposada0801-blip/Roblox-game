@@ -25,7 +25,7 @@ local Signal = require(Shared.Util.Signal)
 local Format = require(Shared.Util.Format)
 local ItemBuilder = require(script.Parent.Parent.Tycoon.ItemBuilder)
 
-local DataService, EconomyService, PlotService, PlayerService, QuestService, Net
+local DataService, EconomyService, PlotService, PlayerService, QuestService, CoopService, Net
 
 local TOUCH_COOLDOWN = 0.75 -- seconds between purchase attempts on one button
 
@@ -186,8 +186,9 @@ local function createButton(player, playerState, item)
 		end
 
 		local character = hit:FindFirstAncestorOfClass("Model")
-		if not character or Players:GetPlayerFromCharacter(character) ~= player then
-			return -- only the plot owner can buy here
+		local toucher = character and Players:GetPlayerFromCharacter(character)
+		if not toucher or not CoopService:CanBuild(toucher, player) then
+			return -- only the owner (or their co-op builders) can buy here
 		end
 
 		local humanoid = character:FindFirstChildOfClass("Humanoid")
@@ -305,6 +306,7 @@ function TycoonService:Init(services)
 	PlotService = services.PlotService
 	PlayerService = services.PlayerService
 	QuestService = services.QuestService
+	CoopService = services.CoopService
 	Net = services.Net
 	validateConfig()
 end

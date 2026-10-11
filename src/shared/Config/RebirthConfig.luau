@@ -6,7 +6,7 @@
 
 local RebirthConfig = {}
 
-RebirthConfig.BaseCost = 100000 -- cash needed for the first rebirth
+RebirthConfig.BaseCost = 150000 -- cash needed for the first rebirth (tuned with /balance)
 RebirthConfig.CostGrowth = 1.75 -- each rebirth costs this much more than the last
 RebirthConfig.MultiplierPerRebirth = 0.5 -- +0.5x cash per rebirth (1x, 1.5x, 2x, ...)
 

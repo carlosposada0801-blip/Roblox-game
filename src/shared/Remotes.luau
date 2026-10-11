@@ -14,6 +14,7 @@ return {
 	"PetHatched", -- (petType, eggId)
 	"TradeInvite", -- (fromUserId, fromName)
 	"TradeState", -- (state table)
+	"CoopInviteReceived", -- (fromUserId, fromName)
 
 	-- client -> server
 	"RequestRebirth", -- ()
@@ -35,4 +36,14 @@ return {
 	"BuyWeapon", -- (weaponId)
 	"SetPvP", -- (on)
 	"FireWeapon", -- (weaponId, targetPosition) ranged weapons
+	"TutorialDone", -- ()
+	"CosmeticAction", -- (action: "Buy" | "Title" | "Trail" | "Accent", id)
+	"Ascend", -- ()
+	"ContractAction", -- (action: "Accept" | "Abandon", index)
+	"RaceAction", -- (action: "Join" | "Upgrade")
+	"MineAction", -- (action: "Craft" | "Sell", oreId, amount)
+	"CoopInvite", -- (userId)
+	"CoopRespond", -- (fromUserId, accept)
+	"CoopLeave", -- ()
+	"CrewAction", -- (action: "Create" | "Join" | "Leave" | "Donate" | "Upgrade", arg)
 }

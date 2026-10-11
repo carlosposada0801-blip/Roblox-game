@@ -49,8 +49,11 @@ function UIKit.root(): ScreenGui
 	local scale = Instance.new("UIScale")
 	scale.Parent = root
 	local camera = workspace.CurrentCamera
+	local touch = game:GetService("UserInputService").TouchEnabled
 	local function rescale()
-		scale.Scale = math.clamp(camera.ViewportSize.Y / 850, 0.55, 1.15)
+		-- Phones are short in landscape; keep buttons big enough to tap
+		local minimum = if touch then 0.62 else 0.55
+		scale.Scale = math.clamp(camera.ViewportSize.Y / 850, minimum, 1.15)
 	end
 	camera:GetPropertyChangedSignal("ViewportSize"):Connect(rescale)
 	rescale()

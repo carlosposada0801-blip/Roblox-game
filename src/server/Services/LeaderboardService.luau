@@ -139,7 +139,8 @@ local function refresh(board)
 		local entry = entries[rank]
 		if entry then
 			local medal = ({ "🥇", "🥈", "🥉" })[rank] or ("  " .. rank .. ".")
-			row.Text = ("  %s %s — %s"):format(medal, getName(tonumber(entry.key)), Format.abbreviate(entry.value))
+			local name = if board.Config.Custom then entry.key else getName(tonumber(entry.key))
+			row.Text = ("  %s %s — %s%s"):format(medal, name, board.Config.Prefix or "", Format.abbreviate(entry.value))
 		else
 			row.Text = ""
 		end
@@ -152,10 +153,21 @@ function LeaderboardService:SaveScores(player: Player)
 		return
 	end
 	for _, board in ipairs(boards) do
-		local value = math.floor(tonumber(data[board.Config.Stat]) or 0)
+		local value = if board.Config.Custom then 0 else math.floor(tonumber(data[board.Config.Stat]) or 0)
 		if board.Store and value > 0 then
 			task.spawn(pcall, function()
 				board.Store:SetAsync(tostring(player.UserId), value)
+			end)
+		end
+	end
+end
+
+-- For boards whose rows aren't players (crews)
+function LeaderboardService:SetCustomScore(boardId: string, key: string, value: number)
+	for _, board in ipairs(boards) do
+		if board.Config.Id == boardId and board.Store then
+			task.spawn(pcall, function()
+				board.Store:SetAsync(key, math.floor(value))
 			end)
 		end
 	end

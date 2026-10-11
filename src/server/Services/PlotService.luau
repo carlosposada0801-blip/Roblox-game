@@ -322,12 +322,36 @@ function PlotService:ReleasePlot(player: Player)
 	plot.Owner = nil
 	plot.Model:SetAttribute("OwnerId", 0)
 	plot.OwnerLabel.Text = PlotConfig.UnclaimedText
+	self:Restyle(plot, {})
 
 	for _, folderName in ipairs({ "Items", "Buttons", "Drops", "Workers" }) do
 		plot.Model[folderName]:ClearAllChildren()
 	end
 
 	self.PlotReleased:Fire(player, plot)
+end
+
+-- Recolors a plot's floor and neon (ascension themes and accent cosmetics).
+-- style = { Base = Color3?, Material = Enum.Material?, Accent = Color3? }; nil values mean "plot default".
+local ACCENT_PARTS = { Edge1 = true, Edge2 = true, Edge3 = true, Edge4 = true, PylonCap = true, Grid = true, BoardTrim = true, Gear = true }
+function PlotService:Restyle(plot, style)
+	local base = plot.Model:FindFirstChild("Base")
+	if base then
+		base.Color = style.Base or PlotConfig.BaseColor
+		base.Material = style.Material or PlotConfig.BaseMaterial
+	end
+	local accent = style.Accent or plot.AccentColor
+	for _, descendant in ipairs(plot.Model:GetDescendants()) do
+		if descendant:IsA("BasePart") and ACCENT_PARTS[descendant.Name] then
+			descendant.Color = accent
+			local light = descendant:FindFirstChildOfClass("PointLight")
+			if light then
+				light.Color = accent
+			end
+		elseif descendant:IsA("TextLabel") and descendant.Name == "Title" then
+			descendant.TextColor3 = accent
+		end
+	end
 end
 
 function PlotService:GetPlot(player: Player)

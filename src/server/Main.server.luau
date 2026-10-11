@@ -6,33 +6,44 @@
 	To add a new service: create it in Services/ and add it to SERVICE_ORDER.
 ]]
 
-local RunService = game:GetService("RunService")
 
 local Services = script.Parent.Services
 
 local SERVICE_ORDER = {
 	"Net",
 	"SceneryService",
+	"SeasonService",
 	"DataService",
 	"PlotService",
 	"EconomyService",
+	"ContractService",
 	"QuestService",
 	"EventService",
 	"PetService",
 	"RobotBookService",
+	"MiningService",
 	"TycoonService",
 	"UpgradeService",
 	"WorkerService",
 	"ProductionService",
 	"LeaderboardService",
+	"AscensionService",
 	"RebirthService",
 	"MonetizationService",
 	"ArenaService",
 	"CombatService",
+	"BossService",
+	"DefenseService",
+	"RaceService",
 	"SettingsService",
 	"DailyService",
 	"SocialService",
 	"TradeService",
+	"CoopService",
+	"CrewService",
+	"AchievementService",
+	"CosmeticService",
+	"TutorialService",
 	"PlayerService", -- keep last: it starts loading players
 }
 
@@ -56,9 +67,8 @@ for _, name in ipairs(SERVICE_ORDER) do
 	run(name, "Init")
 end
 
-if RunService:IsStudio() then
-	require(script.Parent.Dev.DevCommands):Init(services)
-end
+-- Dev commands: everyone in Studio; only the creator and AdminConfig.Admins in live games
+require(script.Parent.Dev.DevCommands):Init(services)
 
 for _, name in ipairs(SERVICE_ORDER) do
 	run(name, "Start")

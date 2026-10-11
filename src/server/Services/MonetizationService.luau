@@ -32,7 +32,7 @@ local MonetizationConfig = require(Shared.Config.MonetizationConfig)
 local RebirthConfig = require(Shared.Config.RebirthConfig)
 local Format = require(Shared.Util.Format)
 
-local DataService, EconomyService, TycoonService, Net
+local DataService, EconomyService, TycoonService, PetService, Net
 
 local MonetizationService = {}
 
@@ -76,6 +76,8 @@ end
 
 -- Yields. Called by PlayerService before the tycoon is built.
 function MonetizationService:LoadPasses(player: Player)
+	local data = DataService:GetData(player)
+	player:SetAttribute("StarterPackBought", data ~= nil and data.StarterPackBought)
 	for key, pass in pairs(MonetizationConfig.GamePasses) do
 		if pass.Id ~= 0 then
 			local ok, owns = pcall(MarketplaceService.UserOwnsGamePassAsync, MarketplaceService, player.UserId, pass.Id)
@@ -109,6 +111,13 @@ local function grantProduct(player, product)
 			assert(EconomyService:AddCash(player, product.FallbackCash), "AddCash failed")
 			Net:Notify(player, ("Everything's unlocked, so here's %s instead!"):format(Format.cash(product.FallbackCash)), "success")
 		end
+	elseif product.Kind == "StarterPack" then
+		-- Granted every time it's bought (Roblox can't stop a re-purchase), but the shop hides it after the first
+		local text = EconomyService:GrantReward(player, { Cash = product.Cash, Robots = product.Robots }, false)
+		PetService:GivePet(player, product.Pet)
+		data.StarterPackBought = true
+		player:SetAttribute("StarterPackBought", true)
+		Net:Notify(player, ("Thanks! Starter Pack: %s and a %s pet!"):format(text, product.Pet), "success")
 	elseif product.Kind == "Prototype" then
 		EconomyService:AddStat(player, "Prototypes", 1)
 		Net:Notify(player, "Thanks! You unlocked a ★ PROTOTYPE ★ robot. Take it to the arena!", "special")
@@ -226,6 +235,7 @@ function MonetizationService:Init(services)
 	DataService = services.DataService
 	EconomyService = services.EconomyService
 	TycoonService = services.TycoonService
+	PetService = services.PetService
 	Net = services.Net
 	warnPlaceholders()
 end
@@ -243,6 +253,9 @@ function MonetizationService:Start()
 	end)
 
 	Net:On("RequestPurchase", requestPurchase, 1, 2)
+	Players.PlayerMembershipChanged:Connect(function(player)
+		EconomyService:Refresh(player)
+	end)
 end
 
 -- Studio dev commands

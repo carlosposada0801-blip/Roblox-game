@@ -5,6 +5,7 @@
 	(ProcessReceipt for products). Nothing is granted from the client.
 ]]
 
+local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -109,10 +110,36 @@ function ShopPanel.build()
 	end
 
 	makeHeader(list, "Boosts & Items", 100)
+	local starterCard
 	for index, item in ipairs(sortedEntries(MonetizationConfig.Products)) do
-		makeCard(list, item.Entry, 100 + index, Theme.Blue, function()
+		local button = makeCard(list, item.Entry, 100 + index, if item.Key == "StarterPack" then Theme.Green else Theme.Blue, function()
 			Net.Fire("RequestPurchase", "Product", item.Key)
 		end)
+		if item.Key == "StarterPack" then
+			starterCard = button.Parent
+		end
+	end
+	if starterCard then
+		local function updateStarter()
+			starterCard.Visible = player:GetAttribute("StarterPackBought") ~= true
+		end
+		player:GetAttributeChangedSignal("StarterPackBought"):Connect(updateStarter)
+		updateStarter()
+	end
+
+	-- Roblox Premium perk
+	makeHeader(list, "Roblox Premium", 200)
+	local premiumButton = makeCard(list, {
+		Icon = "⭐",
+		DisplayName = "Premium Bonus",
+		Description = ("Roblox Premium members earn +%d%% cash in this game!"):format(MonetizationConfig.PremiumBonus * 100),
+		PriceText = "GET PREMIUM",
+	}, 201, Theme.Accent, function()
+		pcall(MarketplaceService.PromptPremiumPurchase, MarketplaceService, player)
+	end)
+	if player.MembershipType == Enum.MembershipType.Premium then
+		premiumButton.Text = "ACTIVE ✓"
+		premiumButton:SetAttribute("Disabled", true)
 	end
 
 	local function updatePasses()

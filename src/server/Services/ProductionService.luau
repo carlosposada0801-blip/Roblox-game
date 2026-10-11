@@ -27,7 +27,7 @@ local MonetizationConfig = require(Shared.Config.MonetizationConfig)
 local Format = require(Shared.Util.Format)
 
 local EconomyService, TycoonService, PlotService, PlayerService, WorkerService, Net
-local EventService, UpgradeService, RobotBookService, QuestService
+local EventService, UpgradeService, RobotBookService, QuestService, MiningService, CoopService
 
 local Stages = ProductionConfig.Stages
 local UPDATE_INTERVAL = 1 / 20
@@ -343,6 +343,7 @@ local function process(player, st, machine, record)
 	local multiplier = (config.Multiplier or 1)
 		* WorkerService:GetMachineMultiplier(player, machine.Item.Id)
 		* UpgradeService:GetMachineMultiplier(player, machine.Item.Id)
+		* MiningService:GetMachineMultiplier(player)
 	local part = record.Part
 	pulse(machine.Glow)
 
@@ -514,7 +515,9 @@ local function setupCashPad(player, st, pad)
 	local lastTouch = 0
 	pad.Touched:Connect(function(hit)
 		local character = hit:FindFirstAncestorOfClass("Model")
-		if not character or Players:GetPlayerFromCharacter(character) ~= player or not isCurrent(player, st) then
+		local toucher = character and Players:GetPlayerFromCharacter(character)
+		-- The owner, or a co-op builder (cash still goes to the owner)
+		if not toucher or not CoopService:CanBuild(toucher, player) or not isCurrent(player, st) then
 			return
 		end
 		local now = os.clock()
@@ -587,6 +590,8 @@ function ProductionService:Init(services)
 	UpgradeService = services.UpgradeService
 	RobotBookService = services.RobotBookService
 	QuestService = services.QuestService
+	MiningService = services.MiningService
+	CoopService = services.CoopService
 end
 
 function ProductionService:Start()

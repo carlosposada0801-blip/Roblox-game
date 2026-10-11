@@ -47,6 +47,20 @@ DataConfig.Template = {
 	Settings = {
 		GuideArrow = true, -- arrow pointing at the next thing to buy
 	},
+	TutorialDone = false,
+	Ascensions = 0, -- prestige level (AscensionConfig)
+	Achievements = {}, -- [achievementId] = os.time()
+	Cosmetics = { Title = "", Trail = "", Accent = "" }, -- equipped
+	OwnedCosmetics = {}, -- [cosmeticId] = true (bought; achievement ones unlock automatically)
+	BossKills = 0, -- boss raids won
+	DroneKills = 0, -- rogue drones destroyed
+	RaceWins = 0,
+	RaceBotLevel = 1,
+	ContractsDone = 0,
+	Ores = { Copper = 0, Crystal = 0, Uranium = 0 },
+	Cores = 0, -- crafted Machine Cores (+value to every machine)
+	Crew = "", -- crew name (CrewService)
+	StarterPackBought = false,
 }
 
 return DataConfig

@@ -101,6 +101,9 @@ function HudController:Start(controllers)
 	local rebirthLabel = makePill(row, 2, Theme.Purple)
 	local robotsLabel = makePill(row, 3, Theme.Blue)
 	local prototypeLabel = makePill(row, 4, Color3.fromRGB(255, 120, 255))
+	local premiumLabel = makePill(row, 5, Color3.fromRGB(255, 220, 80))
+	premiumLabel.Text = "⭐ Premium"
+	premiumLabel.Parent.Visible = player.MembershipType == Enum.MembershipType.Premium
 
 	-- Wait for the server to finish loading this player
 	while player:GetAttribute("DataLoaded") ~= true do

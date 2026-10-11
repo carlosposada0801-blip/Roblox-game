@@ -20,6 +20,10 @@ local CONTROLLER_ORDER = {
 	"PetController",
 	"TradeController",
 	"WeaponController",
+	"TutorialController",
+	"ChatController",
+	"CoopController",
+	"RaidController",
 	"EnvironmentController",
 	"MusicController",
 }

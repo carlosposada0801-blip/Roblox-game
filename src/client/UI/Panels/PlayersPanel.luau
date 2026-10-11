@@ -15,7 +15,7 @@ local player = Players.LocalPlayer
 local PlayersPanel = {}
 
 function PlayersPanel.build()
-	local window, content = UIKit.window("👥 FACTORIES", Theme.Blue, Vector2.new(560, 470))
+	local window, content = UIKit.window("👥 FACTORIES", Theme.Blue, Vector2.new(640, 470))
 
 	UIKit.label({
 		Size = UDim2.new(1, 0, 0, 22),
@@ -51,7 +51,7 @@ function PlayersPanel.build()
 				local card = UIKit.card({ Size = UDim2.new(1, -10, 0, 64), LayoutOrder = plotId, Parent = list }, if isMe then Theme.Cyan else Theme.Blue)
 				UIKit.label({
 					Position = UDim2.fromOffset(14, 6),
-					Size = UDim2.new(1, -260, 0, 28),
+					Size = UDim2.new(1, -380, 0, 28),
 					Font = Theme.Title,
 					Text = owner.DisplayName .. (if isMe then " (you)" else ""),
 					TextXAlignment = Enum.TextXAlignment.Left,
@@ -60,7 +60,7 @@ function PlayersPanel.build()
 				})
 				UIKit.label({
 					Position = UDim2.fromOffset(14, 34),
-					Size = UDim2.new(1, -260, 0, 20),
+					Size = UDim2.new(1, -380, 0, 20),
 					Text = ("Plot %d  •  👍 %d  •  🔄 %d"):format(plotId, owner:GetAttribute("Likes") or 0, owner:FindFirstChild("leaderstats") and owner.leaderstats:FindFirstChild("Rebirths") and owner.leaderstats.Rebirths.Value or 0),
 					TextColor3 = Theme.SubText,
 					TextXAlignment = Enum.TextXAlignment.Left,
@@ -88,6 +88,17 @@ function PlayersPanel.build()
 					Net.Fire("TradeRequest", owner.UserId)
 				end)
 				trade.Visible = not isMe
+				local build = UIKit.button({
+					AnchorPoint = Vector2.new(1, 0.5),
+					Position = UDim2.new(1, -246, 0.5, 0),
+					Size = UDim2.fromOffset(110, 44),
+					Color = Theme.Green,
+					Text = "BUILD 🤝",
+					Parent = card,
+				}, function()
+					Net.Fire("CoopInvite", owner.UserId)
+				end)
+				build.Visible = not isMe
 			end
 		end
 	end
