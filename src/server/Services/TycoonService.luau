@@ -25,7 +25,7 @@ local Signal = require(Shared.Util.Signal)
 local Format = require(Shared.Util.Format)
 local ItemBuilder = require(script.Parent.Parent.Tycoon.ItemBuilder)
 
-local DataService, EconomyService, PlotService, PlayerService, Net
+local DataService, EconomyService, PlotService, PlayerService, QuestService, Net
 
 local TOUCH_COOLDOWN = 0.75 -- seconds between purchase attempts on one button
 
@@ -115,8 +115,12 @@ local function requirementsMet(data, item)
 end
 
 -- Can this item be bought with cash right now?
+-- MinRebirths items (the second floor) only appear after enough rebirths.
 local function isAvailable(data, item)
-	return not item.GamePass and not data.Unlocked[item.Id] and requirementsMet(data, item)
+	return not item.GamePass
+		and not data.Unlocked[item.Id]
+		and data.Rebirths >= (item.MinRebirths or 0)
+		and requirementsMet(data, item)
 end
 
 local function makeText(parent, text, position, size, color)
@@ -245,6 +249,10 @@ local function unlock(player, item, isRebuild)
 	end
 
 	local model = ItemBuilder.build(item, playerState.Plot)
+	if not isRebuild then
+		local center = model:GetBoundingBox()
+		Net:FireAll("Fx", "Confetti", center.Position)
+	end
 	TycoonService.ItemUnlocked:Fire(player, playerState.Plot, item, model, isRebuild)
 end
 
@@ -296,6 +304,7 @@ function TycoonService:Init(services)
 	EconomyService = services.EconomyService
 	PlotService = services.PlotService
 	PlayerService = services.PlayerService
+	QuestService = services.QuestService
 	Net = services.Net
 	validateConfig()
 end
@@ -317,7 +326,7 @@ function TycoonService:TryPurchase(player: Player, itemId: string)
 		return false, "UnknownItem"
 	elseif data.Unlocked[itemId] then
 		return false, "Owned"
-	elseif not requirementsMet(data, item) then
+	elseif not requirementsMet(data, item) or data.Rebirths < (item.MinRebirths or 0) then
 		return false, "Locked"
 	elseif not EconomyService:TrySpend(player, item.Price) then
 		return false, "TooExpensive"
@@ -325,6 +334,7 @@ function TycoonService:TryPurchase(player: Player, itemId: string)
 
 	unlock(player, item, false)
 	refreshButtons(player)
+	QuestService:Track(player, "ItemsBought", 1)
 	return true
 end
 

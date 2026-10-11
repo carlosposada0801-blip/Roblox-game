@@ -52,23 +52,86 @@ local function at(x, y, z)
 end
 
 -- Part list builders (they only return data) -------------------------------
+-- z and y let the same builders place things on the upper floor.
 
-local function dropper(x, color)
+local HAZARD = Color3.fromRGB(255, 200, 40)
+
+local function dropper(x, color, z, y)
+	z, y = z or BELT_Z, y or 0
 	return {
-		{ Name = "Body", Size = Vector3.new(5, 4, 10), CFrame = at(x, 11, BELT_Z), Color = color, Material = Enum.Material.Metal },
-		{ Name = "Spout", Size = Vector3.new(2.5, 1.5, 2.5), CFrame = at(x, 8.25, BELT_Z), Color = Color3.fromRGB(255, 200, 60), Material = Enum.Material.Neon },
-		{ Name = "Leg", Size = Vector3.new(1, 9, 1), CFrame = at(x, 4.5, BELT_Z - 4.5), Color = DARK_METAL, Material = Enum.Material.Metal },
-		{ Name = "Leg", Size = Vector3.new(1, 9, 1), CFrame = at(x, 4.5, BELT_Z + 4.5), Color = DARK_METAL, Material = Enum.Material.Metal },
+		{ Name = "Body", Size = Vector3.new(5, 4, 10), CFrame = at(x, y + 11, z), Color = color, Material = Enum.Material.Metal },
+		{ Name = "Hopper", Size = Vector3.new(4, 1.5, 4), CFrame = at(x, y + 13.75, z), Color = DARK_METAL, Material = Enum.Material.DiamondPlate },
+		{ Name = "Stripe", Size = Vector3.new(5.1, 0.5, 10.1), CFrame = at(x, y + 9.5, z), Color = HAZARD, Material = Enum.Material.Neon },
+		{ Name = "Fan", Size = Vector3.new(4.5, 0.25, 0.7), CFrame = at(x, y + 14.7, z), Color = STEEL, Material = Enum.Material.Metal, Spin = 6 },
+		{ Name = "Beacon", Size = Vector3.new(0.8, 0.8, 0.8), Shape = Enum.PartType.Ball, CFrame = at(x + 2, y + 13.4, z + 4.4), Color = Color3.fromRGB(255, 60, 60), Material = Enum.Material.Neon, Light = { Brightness = 1, Range = 6, Color = Color3.fromRGB(255, 60, 60) } },
+		{ Name = "Spout", Size = Vector3.new(2.5, 1.5, 2.5), CFrame = at(x, y + 8.25, z), Color = HAZARD, Material = Enum.Material.Neon },
+		{ Name = "Leg", Size = Vector3.new(1, 9, 1), CFrame = at(x, y + 4.5, z - 4.5), Color = DARK_METAL, Material = Enum.Material.Metal },
+		{ Name = "Leg", Size = Vector3.new(1, 9, 1), CFrame = at(x, y + 4.5, z + 4.5), Color = DARK_METAL, Material = Enum.Material.Metal },
 	}
 end
 
-local function machine(x, color)
+-- effect: extra parts that make each machine look different (fire, sparks, paint...)
+local function machine(x, color, effect, z, y)
+	z, y = z or BELT_Z, y or 0
+	local parts = {
+		{ Name = "Roof", Size = Vector3.new(6, 2, 10.5), CFrame = at(x, y + 9, z), Color = color, Material = Enum.Material.Metal },
+		{ Name = "Glow", Size = Vector3.new(6.2, 0.6, 10.7), CFrame = at(x, y + 8, z), Color = color, Material = Enum.Material.Neon },
+		{ Name = "Pillar", Size = Vector3.new(6, 8, 1.5), CFrame = at(x, y + 4, z - 4.5), Color = DARK_METAL, Material = Enum.Material.DiamondPlate },
+		{ Name = "Pillar", Size = Vector3.new(6, 8, 1.5), CFrame = at(x, y + 4, z + 4.5), Color = DARK_METAL, Material = Enum.Material.DiamondPlate },
+		{ Name = "PillarTrim", Size = Vector3.new(6.2, 0.4, 1.7), CFrame = at(x, y + 1, z - 4.5), Color = HAZARD, Material = Enum.Material.Neon },
+		{ Name = "PillarTrim", Size = Vector3.new(6.2, 0.4, 1.7), CFrame = at(x, y + 1, z + 4.5), Color = HAZARD, Material = Enum.Material.Neon },
+		{ Name = "GearHub", Size = Vector3.new(1.2, 1.6, 1.6), Shape = Enum.PartType.Cylinder, CFrame = at(x, y + 10.6, z) * CFrame.Angles(0, 0, math.rad(90)), Color = STEEL, Material = Enum.Material.Metal },
+		{ Name = "GearArm", Size = Vector3.new(5, 0.4, 0.8), CFrame = at(x, y + 10.4, z), Color = color, Material = Enum.Material.Metal, Spin = 2 },
+		{ Name = "GearArm", Size = Vector3.new(0.8, 0.4, 5), CFrame = at(x, y + 10.4, z), Color = color, Material = Enum.Material.Metal, Spin = 2 },
+		{ Name = "Zone", Size = Vector3.new(4, 4, 6), CFrame = at(x, y + BELT_TOP + 2, z), Transparency = 1, CanCollide = false, CanQuery = false },
+	}
+	for _, extra in ipairs(effect or {}) do
+		table.insert(parts, extra)
+	end
+	return parts
+end
+
+-- Machine effects
+local function furnace(x, z, y)
+	z, y = z or BELT_Z, y or 0
 	return {
-		{ Name = "Roof", Size = Vector3.new(6, 2, 10.5), CFrame = at(x, 9, BELT_Z), Color = color, Material = Enum.Material.Metal },
-		{ Name = "Glow", Size = Vector3.new(6.2, 0.6, 10.7), CFrame = at(x, 8, BELT_Z), Color = color, Material = Enum.Material.Neon },
-		{ Name = "Pillar", Size = Vector3.new(6, 8, 1.5), CFrame = at(x, 4, BELT_Z - 4.5), Color = DARK_METAL, Material = Enum.Material.Metal },
-		{ Name = "Pillar", Size = Vector3.new(6, 8, 1.5), CFrame = at(x, 4, BELT_Z + 4.5), Color = DARK_METAL, Material = Enum.Material.Metal },
-		{ Name = "Zone", Size = Vector3.new(4, 4, 6), CFrame = at(x, BELT_TOP + 2, BELT_Z), Transparency = 1, CanCollide = false, CanQuery = false },
+		{ Name = "Furnace", Size = Vector3.new(3, 1, 3), CFrame = at(x, y + 7.3, z), Color = Color3.fromRGB(255, 120, 20), Material = Enum.Material.Neon, CanCollide = false, Fire = { Size = 4, Heat = 6, Color = Color3.fromRGB(255, 120, 20), SecondaryColor = Color3.fromRGB(255, 220, 60) }, Light = { Brightness = 3, Range = 14, Color = Color3.fromRGB(255, 140, 40) } },
+		{ Name = "Chimney", Size = Vector3.new(1.6, 4, 1.6), CFrame = at(x + 1.8, y + 12, z - 3), Color = DARK_METAL, Material = Enum.Material.Metal, Smoke = { Color = Color3.fromRGB(90, 90, 100), Opacity = 0.15, RiseVelocity = 4, Size = 2 } },
+	}
+end
+local function welder(x, z, y)
+	z, y = z or BELT_Z, y or 0
+	return {
+		{ Name = "WelderArm", Size = Vector3.new(0.6, 3, 0.6), CFrame = at(x, y + 6, z - 1.5), Color = STEEL, Material = Enum.Material.Metal, CanCollide = false },
+		{ Name = "WelderTip", Size = Vector3.new(0.7, 0.7, 0.7), Shape = Enum.PartType.Ball, CFrame = at(x, y + 4.4, z - 1.5), Color = Color3.fromRGB(120, 220, 255), Material = Enum.Material.Neon, CanCollide = false, Emitter = { Texture = "Sparks", Rate = 30, Lifetime = 0.35, Speed = 7, Size = 0.35, Colors = { Color3.fromRGB(255, 240, 120), Color3.fromRGB(255, 140, 20) } }, Light = { Brightness = 2, Range = 10, Color = Color3.fromRGB(120, 220, 255) } },
+	}
+end
+local function paintSpray(x, z, y)
+	z, y = z or BELT_Z, y or 0
+	local rainbow = { Color3.fromRGB(255, 60, 60), Color3.fromRGB(255, 220, 60), Color3.fromRGB(60, 220, 100), Color3.fromRGB(0, 170, 255), Color3.fromRGB(200, 90, 255) }
+	return {
+		{ Name = "Nozzle", Size = Vector3.new(1, 1, 1), CFrame = at(x, y + 7.3, z), Color = Color3.fromRGB(255, 80, 200), Material = Enum.Material.Neon, CanCollide = false, Emitter = { Texture = "Square", Rate = 25, Lifetime = 0.7, Speed = 3, Size = 0.45, Spread = 25, Acceleration = Vector3.new(0, -25, 0), Colors = rainbow, LightEmission = 0.4 } },
+		{ Name = "PaintTank", Size = Vector3.new(1.6, 2.6, 1.6), Shape = Enum.PartType.Cylinder, CFrame = at(x - 2, y + 11.5, z + 3) * CFrame.Angles(0, 0, math.rad(90)), Color = Color3.fromRGB(255, 80, 200), Material = Enum.Material.Glass, Transparency = 0.3 },
+	}
+end
+local function assemblyRig(x, z, y)
+	z, y = z or BELT_Z, y or 0
+	return {
+		{ Name = "Core", Size = Vector3.new(1.4, 1.4, 1.4), Shape = Enum.PartType.Ball, CFrame = at(x, y + 7.2, z), Color = Color3.fromRGB(255, 215, 0), Material = Enum.Material.Neon, CanCollide = false, Sparkles = Color3.fromRGB(255, 230, 120), Light = { Brightness = 3, Range = 14, Color = Color3.fromRGB(255, 215, 0) } },
+		{ Name = "RobotArm", Size = Vector3.new(4, 0.5, 0.5), CFrame = at(x, y + 6.6, z), Color = STEEL, Material = Enum.Material.Metal, CanCollide = false, Spin = 3 },
+	}
+end
+local function laser(x, z, y)
+	z, y = z or BELT_Z, y or 0
+	return {
+		{ Name = "LaserBeam", Size = Vector3.new(0.25, 5, 0.25), CFrame = at(x, y + 5.2, z), Color = Color3.fromRGB(255, 40, 60), Material = Enum.Material.Neon, CanCollide = false, CanQuery = false, Emitter = { Texture = "Sparks", Rate = 25, Lifetime = 0.3, Speed = 6, Size = 0.3, Colors = { Color3.fromRGB(255, 80, 80), Color3.fromRGB(255, 200, 80) } }, Light = { Brightness = 3, Range = 12, Color = Color3.fromRGB(255, 40, 60) } },
+	}
+end
+local function aiCore(x, z, y)
+	z, y = z or BELT_Z, y or 0
+	return {
+		{ Name = "Brain", Size = Vector3.new(2.4, 2.4, 2.4), Shape = Enum.PartType.Ball, CFrame = at(x, y + 12.2, z), Color = Color3.fromRGB(0, 230, 255), Material = Enum.Material.Neon, CanCollide = false, Sparkles = Color3.fromRGB(120, 240, 255), Light = { Brightness = 4, Range = 18, Color = Color3.fromRGB(0, 230, 255) } },
+		{ Name = "Ring", Size = Vector3.new(5, 0.3, 0.6), CFrame = at(x, y + 12.2, z), Color = Color3.fromRGB(255, 255, 255), Material = Enum.Material.Neon, CanCollide = false, Spin = -4 },
 	}
 end
 
@@ -105,10 +168,49 @@ local function concat(...)
 	return result
 end
 
+-- Upper floor (second production line, unlocked after rebirths)
+local UPPER_Y = 17 -- top of the upper floor
+local UPPER_Z = -30 -- the upper belt runs along X at this depth
+local UPPER_BELT_END = 38
+
+local function upperFloor()
+	local rampRise, rampRun = UPPER_Y, 38
+	local rampLength = math.sqrt(rampRise ^ 2 + rampRun ^ 2)
+	local rampAngle = math.atan2(rampRise, rampRun)
+	local floorColor = Color3.fromRGB(50, 54, 64)
+	local parts = {
+		{ Name = "UpperFloor", Size = Vector3.new(100, 1, 42), CFrame = at(0, UPPER_Y - 0.5, -29), Color = floorColor, Material = Enum.Material.DiamondPlate },
+		{ Name = "UpperEdge", Size = Vector3.new(92, 0.4, 0.6), CFrame = at(-4, UPPER_Y - 0.6, -8), Color = HAZARD, Material = Enum.Material.Neon },
+		-- Ramp from the front-right of the plot up to the upper floor
+		{ Name = "Ramp", Size = Vector3.new(6, 1, rampLength), CFrame = at(45, rampRise / 2 - 0.5, -8 + rampRun / 2) * CFrame.Angles(rampAngle, 0, 0), Color = floorColor, Material = Enum.Material.DiamondPlate },
+		{ Name = "RampTrim", Size = Vector3.new(0.4, 1.4, rampLength), CFrame = at(41.8, rampRise / 2, -8 + rampRun / 2) * CFrame.Angles(rampAngle, 0, 0), Color = HAZARD, Material = Enum.Material.Neon },
+		-- Upper conveyor
+		{ Name = "Frame", Size = Vector3.new(UPPER_BELT_END - BELT_START, 1.5, 7), CFrame = at((BELT_START + UPPER_BELT_END) / 2, UPPER_Y + 0.75, UPPER_Z), Color = DARK_METAL, Material = Enum.Material.Metal },
+		{ Name = "Belt", Size = Vector3.new(UPPER_BELT_END - BELT_START, 0.2, 6), CFrame = at((BELT_START + UPPER_BELT_END) / 2, UPPER_Y + BELT_TOP - 0.1, UPPER_Z), Color = Color3.fromRGB(25, 25, 28), Material = Enum.Material.Fabric },
+		{ Name = "Rail", Size = Vector3.new(UPPER_BELT_END - BELT_START, 1, 0.5), CFrame = at((BELT_START + UPPER_BELT_END) / 2, UPPER_Y + BELT_TOP + 0.5, UPPER_Z - 3.25), Color = HAZARD, Material = Enum.Material.Metal },
+		{ Name = "Rail", Size = Vector3.new(UPPER_BELT_END - BELT_START, 1, 0.5), CFrame = at((BELT_START + UPPER_BELT_END) / 2, UPPER_Y + BELT_TOP + 0.5, UPPER_Z + 3.25), Color = HAZARD, Material = Enum.Material.Metal },
+		-- Upper collector bin (sells into the same cash pad downstairs)
+		{ Name = "Base", Size = Vector3.new(7, 1, 9), CFrame = at(42.5, UPPER_Y + 0.5, UPPER_Z), Color = DARK_METAL, Material = Enum.Material.Metal },
+		{ Name = "Wall", Size = Vector3.new(1, 4, 9), CFrame = at(45.5, UPPER_Y + 3, UPPER_Z), Color = Color3.fromRGB(60, 200, 90), Material = Enum.Material.Metal },
+		{ Name = "Intake", Size = Vector3.new(6, 3, 7), CFrame = at(42, UPPER_Y + 2.5, UPPER_Z), Color = Color3.fromRGB(60, 255, 120), Material = Enum.Material.Neon, Transparency = 0.6, CanCollide = false, Sparkles = Color3.fromRGB(120, 255, 150) },
+	}
+	-- Ceiling lights for the ground floor underneath
+	for _, x in ipairs({ -30, 0, 30 }) do
+		table.insert(parts, { Name = "CeilingLight", Size = Vector3.new(8, 0.3, 1), CFrame = at(x, UPPER_Y - 1.15, -22), Color = Color3.fromRGB(220, 240, 255), Material = Enum.Material.Neon, Light = { Brightness = 2, Range = 22, Color = Color3.fromRGB(220, 240, 255) } })
+	end
+	-- Railings along the front edge
+	for x = -46, 36, 8 do
+		table.insert(parts, { Name = "Railing", Size = Vector3.new(0.4, 3, 0.4), CFrame = at(x, UPPER_Y + 1.5, -8.6), Color = STEEL, Material = Enum.Material.Metal })
+	end
+	table.insert(parts, { Name = "RailingTop", Size = Vector3.new(84, 0.4, 0.4), CFrame = at(-5, UPPER_Y + 3, -8.6), Color = HAZARD, Material = Enum.Material.Neon })
+	return parts
+end
+
 -- Button rows (plot-local Z)
 local ROW_PRODUCTION = -8 -- buttons sit right in front of the item they build
 local ROW_CONVEYOR = 4
 local ROW_BUILDING = 16
+local ROW_EXPANSION = 26 -- second floor (needs rebirths)
 
 -- Items ---------------------------------------------------------------------
 -- The order here is just for readability. Unlock order comes from Requires.
@@ -126,8 +228,8 @@ local Items = {
 		Parts = {
 			{ Name = "Frame", Size = Vector3.new(BELT_END - BELT_START, 1.5, 7), CFrame = at((BELT_START + BELT_END) / 2, 0.75, BELT_Z), Color = DARK_METAL, Material = Enum.Material.Metal },
 			{ Name = "Belt", Size = Vector3.new(BELT_END - BELT_START, 0.2, 6), CFrame = at((BELT_START + BELT_END) / 2, BELT_TOP - 0.1, BELT_Z), Color = Color3.fromRGB(25, 25, 28), Material = Enum.Material.Fabric },
-			{ Name = "Rail", Size = Vector3.new(BELT_END - BELT_START, 1, 0.5), CFrame = at((BELT_START + BELT_END) / 2, BELT_TOP + 0.5, BELT_Z - 3.25), Color = STEEL, Material = Enum.Material.Metal },
-			{ Name = "Rail", Size = Vector3.new(BELT_END - BELT_START, 1, 0.5), CFrame = at((BELT_START + BELT_END) / 2, BELT_TOP + 0.5, BELT_Z + 3.25), Color = STEEL, Material = Enum.Material.Metal },
+			{ Name = "Rail", Size = Vector3.new(BELT_END - BELT_START, 1, 0.5), CFrame = at((BELT_START + BELT_END) / 2, BELT_TOP + 0.5, BELT_Z - 3.25), Color = HAZARD, Material = Enum.Material.Metal },
+			{ Name = "Rail", Size = Vector3.new(BELT_END - BELT_START, 1, 0.5), CFrame = at((BELT_START + BELT_END) / 2, BELT_TOP + 0.5, BELT_Z + 3.25), Color = HAZARD, Material = Enum.Material.Metal },
 		},
 	},
 	{
@@ -144,7 +246,7 @@ local Items = {
 			{ Name = "Wall", Size = Vector3.new(1, 4, 9), CFrame = at(47.5, 3, BELT_Z), Color = Color3.fromRGB(60, 200, 90), Material = Enum.Material.Metal },
 			{ Name = "Wall", Size = Vector3.new(6, 4, 1), CFrame = at(44, 3, BELT_Z - 4), Color = Color3.fromRGB(60, 200, 90), Material = Enum.Material.Metal },
 			{ Name = "Wall", Size = Vector3.new(6, 4, 1), CFrame = at(44, 3, BELT_Z + 4), Color = Color3.fromRGB(60, 200, 90), Material = Enum.Material.Metal },
-			{ Name = "Intake", Size = Vector3.new(6, 3, 7), CFrame = at(44, 2.5, BELT_Z), Color = Color3.fromRGB(60, 255, 120), Material = Enum.Material.Neon, Transparency = 0.6, CanCollide = false },
+			{ Name = "Intake", Size = Vector3.new(6, 3, 7), CFrame = at(44, 2.5, BELT_Z), Color = Color3.fromRGB(60, 255, 120), Material = Enum.Material.Neon, Transparency = 0.6, CanCollide = false, Sparkles = Color3.fromRGB(120, 255, 150) },
 			{ Name = "CashPadRim", Size = Vector3.new(7, 0.3, 7), CFrame = at(44, 0.15, -6), Color = DARK_METAL, Material = Enum.Material.Metal },
 			{ Name = "CashPad", Size = Vector3.new(6, 0.4, 6), CFrame = at(44, 0.35, -6), Color = Color3.fromRGB(60, 200, 90), Material = Enum.Material.Neon, CanCollide = false },
 		},
@@ -191,7 +293,7 @@ local Items = {
 		Button = Vector3.new(-10, 0, ROW_PRODUCTION),
 		Label = true,
 		Machine = { Accepts = { "Scrap" }, Output = "Metal", Multiplier = 2 },
-		Parts = machine(-10, Color3.fromRGB(255, 100, 30)),
+		Parts = machine(-10, Color3.fromRGB(255, 100, 30), furnace(-10)),
 	},
 	{
 		Id = "BackWall",
@@ -236,7 +338,7 @@ local Items = {
 		Button = Vector3.new(6, 0, ROW_PRODUCTION),
 		Label = true,
 		Machine = { Accepts = { "Metal" }, Output = "RobotPart", Multiplier = 2.5 },
-		Parts = machine(6, Color3.fromRGB(0, 170, 255)),
+		Parts = machine(6, Color3.fromRGB(0, 170, 255), welder(6)),
 	},
 	{
 		Id = "SideWalls",
@@ -261,7 +363,7 @@ local Items = {
 		Button = Vector3.new(20, 0, ROW_PRODUCTION),
 		Label = true,
 		Machine = { Accepts = { "Scrap", "Metal", "RobotPart" }, Paint = true, Multiplier = 1.5 },
-		Parts = machine(20, Color3.fromRGB(255, 80, 200)),
+		Parts = machine(20, Color3.fromRGB(255, 80, 200), paintSpray(20)),
 	},
 	{
 		Id = "Lamps",
@@ -303,7 +405,7 @@ local Items = {
 		Button = Vector3.new(33, 0, ROW_PRODUCTION),
 		Label = true,
 		Machine = { Accepts = { "RobotPart" }, Output = "Robot", Multiplier = 2, PartsPerRobot = 3 },
-		Parts = machine(33, Color3.fromRGB(255, 215, 0)),
+		Parts = machine(33, Color3.fromRGB(255, 215, 0), assemblyRig(33)),
 	},
 	{
 		Id = "ShowroomFloor",
@@ -330,6 +432,67 @@ local Items = {
 			{ Name = "Head", Size = Vector3.new(2.5, 2.5, 2.5), CFrame = at(36, 11.25, 34), Color = STEEL, Material = Enum.Material.Metal },
 			{ Name = "Eyes", Size = Vector3.new(1.8, 0.5, 0.2), CFrame = at(36, 11.5, 35.3), Color = Color3.fromRGB(0, 255, 255), Material = Enum.Material.Neon },
 		},
+	},
+
+	-- Second floor (needs 2 rebirths) --------------------------------------------
+	{
+		Id = "UpperFloor",
+		DisplayName = "2nd Floor + Line",
+		Category = "Floor",
+		Price = 50000,
+		MinRebirths = 2,
+		Requires = { "FinalAssembly" },
+		Button = Vector3.new(-18, 0, ROW_EXPANSION),
+		Label = true,
+		Conveyor = { SpeedMultiplier = 1 },
+		Collector = {},
+		Parts = upperFloor(),
+	},
+	{
+		Id = "QuantumDropper1",
+		DisplayName = "Quantum Dropper",
+		Category = "Dropper",
+		Price = 60000,
+		MinRebirths = 2,
+		Requires = { "UpperFloor" },
+		Button = Vector3.new(-10, 0, ROW_EXPANSION),
+		Dropper = { Interval = 1.5, Value = 60, Stage = "Metal" },
+		Parts = dropper(-42, Color3.fromRGB(120, 60, 220), UPPER_Z, UPPER_Y),
+	},
+	{
+		Id = "LaserCutter",
+		DisplayName = "Laser Cutter",
+		Category = "Machine",
+		Price = 120000,
+		MinRebirths = 2,
+		Requires = { "QuantumDropper1" },
+		Button = Vector3.new(10, 0, ROW_EXPANSION),
+		Label = true,
+		Machine = { Accepts = { "Metal" }, Output = "RobotPart", Multiplier = 3 },
+		Parts = machine(-12, Color3.fromRGB(255, 40, 60), laser(-12, UPPER_Z, UPPER_Y), UPPER_Z, UPPER_Y),
+	},
+	{
+		Id = "AICore",
+		DisplayName = "AI Core",
+		Category = "Machine",
+		Price = 250000,
+		MinRebirths = 2,
+		Requires = { "LaserCutter" },
+		Button = Vector3.new(18, 0, ROW_EXPANSION),
+		Label = true,
+		Machine = { Accepts = { "RobotPart" }, Output = "Robot", Multiplier = 3, PartsPerRobot = 2 },
+		Parts = machine(20, Color3.fromRGB(0, 230, 255), aiCore(20, UPPER_Z, UPPER_Y), UPPER_Z, UPPER_Y),
+	},
+	{
+		Id = "QuantumDropper2",
+		DisplayName = "Quantum Dropper II",
+		Category = "Dropper",
+		Price = 400000,
+		MinRebirths = 2,
+		Requires = { "AICore" },
+		Button = Vector3.new(26, 0, ROW_EXPANSION),
+		Dropper = { Interval = 1.2, Value = 90, Stage = "Metal" },
+		Parts = dropper(-32, Color3.fromRGB(120, 60, 220), UPPER_Z, UPPER_Y),
 	},
 
 	-- Game pass items (no button; built automatically for pass owners) -----------

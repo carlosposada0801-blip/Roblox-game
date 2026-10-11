@@ -15,8 +15,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local RebirthConfig = require(Shared.Config.RebirthConfig)
 local MonetizationConfig = require(Shared.Config.MonetizationConfig)
+local Format = require(Shared.Util.Format)
 
-local DataService
+local DataService, PetService, RobotBookService, EventService, QuestService
 
 local EconomyService = {}
 
@@ -48,6 +49,10 @@ end
 
 function EconomyService:Init(services)
 	DataService = services.DataService
+	PetService = services.PetService
+	RobotBookService = services.RobotBookService
+	EventService = services.EventService
+	QuestService = services.QuestService
 end
 
 -- Called once per player after their data loads.
@@ -94,14 +99,51 @@ function EconomyService:GetCash(player: Player): number
 	return data and data.Cash or 0
 end
 
--- Rebirths x 2x Cash pass
+-- Rebirths x 2x Cash pass x pets x collection book x active event
 function EconomyService:GetEarnMultiplier(player: Player): number
 	local data = DataService:GetData(player)
 	local multiplier = RebirthConfig.GetMultiplier(data and data.Rebirths or 0)
 	if player:GetAttribute("Pass_DoubleCash") then
 		multiplier *= MonetizationConfig.DoubleCashMultiplier
 	end
-	return multiplier
+	if PetService then
+		multiplier *= PetService:GetMultiplier(player)
+	end
+	if RobotBookService then
+		multiplier *= RobotBookService:GetMultiplier(player)
+	end
+	if EventService then
+		multiplier *= EventService:GetValue("CashMultiplier", 1)
+	end
+	-- Round to 2 decimals so the HUD shows e.g. x3.15
+	return math.floor(multiplier * 100 + 0.5) / 100
+end
+
+-- Gives a reward table { Cash, Robots, Prototypes }. Cash is multiplied by the
+-- rebirth multiplier when scaleCash is true. Returns a short text like "+$5K, +3 🤖".
+function EconomyService:GrantReward(player: Player, reward, scaleCash: boolean?): string
+	local data = DataService:GetData(player)
+	if not data then
+		return ""
+	end
+	local parts = {}
+	if reward.Cash then
+		local amount = reward.Cash
+		if scaleCash then
+			amount *= RebirthConfig.GetMultiplier(data.Rebirths)
+		end
+		self:AddCash(player, amount)
+		table.insert(parts, "+$" .. Format.abbreviate(amount))
+	end
+	if reward.Robots then
+		self:AddStat(player, "Robots", reward.Robots)
+		table.insert(parts, ("+%d 🤖"):format(reward.Robots))
+	end
+	if reward.Prototypes then
+		self:AddStat(player, "Prototypes", reward.Prototypes)
+		table.insert(parts, ("+%d ⭐ Prototype"):format(reward.Prototypes))
+	end
+	return table.concat(parts, ", ")
 end
 
 -- Adds cash exactly as given (no multipliers). Returns true on success.
@@ -140,6 +182,9 @@ function EconomyService:Earn(player: Player, baseValue: number): number
 
 	local amount = baseValue * self:GetEarnMultiplier(player)
 	data.PendingCash += amount
+	if QuestService then
+		QuestService:Track(player, "CashEarned", amount)
+	end
 
 	if player:GetAttribute("Pass_AutoCollect") then
 		self:CollectPending(player)

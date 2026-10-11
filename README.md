@@ -65,6 +65,26 @@ then Studio → Plugins → Rojo → Connect. `rojo build -o RobotFactoryTycoon.
 
 ---
 
+## v2.0: more to do
+
+| Feature | How it works | Config |
+|---|---|---|
+| 🎁 Daily rewards | Popup on join, 7-day streak (day 7 = Prototype), resets if you miss a day | `DailyConfig` |
+| ⚡ Factory events | Every 3–5 min, 45 s long: Golden Scrap Rush, Power Surge, Cash Frenzy, Robot Parade. Banner and countdown for everyone | `EventConfig` |
+| 📋 Daily quests | 3 per day ("Sell 25 robots", "Hatch an egg"...) with progress bars and rewards | `QuestConfig` |
+| ⬆️ Upgrades | Walk up to a dropper or machine and press **E** to level it up (max Lv 5). Resets on rebirth | `UpgradeConfig` |
+| 🎲 Robot rarities | Every robot rolls Common → Legendary (x1 to x10 value), with glow, sparkles and a name tag | `RarityConfig` |
+| 📖 Collection book | 40 robot types (rarity × paint color). Each one you sell = +1% cash forever | `RarityConfig` |
+| 🛸 Pets | Hatch drone pets from Scrap/Neon eggs; equip 3; each boosts cash; they follow you | `PetConfig` |
+| 🏆 Leaderboards | Top Rebirths, Richest, Most Robots, Arena Champions boards in the lobby | `LeaderboardConfig` |
+| 👥 Visit and like | Players menu → Visit any factory; press **F** at a gate to like it; most-liked factory gets a 👑 crown | — |
+| ⚔️ Arena rounds | 3-minute rounds: knockouts and holding the center hill score points; winner gets a trophy and cash | `ArenaConfig.Rounds` |
+| 🏗️ 2nd floor | After **2 rebirths**: a second floor with a ramp, Quantum Droppers, Laser Cutter and AI Core | `ItemConfig` (`MinRebirths`) |
+| 🤝 Trading | Players menu → Trade: swap robots and Prototypes. Both press Ready, then a 5 s countdown; any change cancels | `TradeConfig` |
+| 🎨 Look and feel | Hazard-striped plots, industrial gates with spinning gears, machine fire/sparks/paint effects, moving belt arrows, factory skyline with smokestacks, robot mascots, hologram title, sci-fi UI, confetti, screen flash on rebirth | `SceneryConfig`, `ItemConfig` |
+
+---
+
 ## Configuration: everything tunable lives in `src/shared/Config/`
 
 | File | What you change there |
@@ -219,6 +239,11 @@ loop handles all plots.
 | `/prototype` | The next robot built is a Prototype |
 | `/pass DoubleCash` | Grant a pass (`DoubleCash`, `AutoCollect`, `FasterConveyors`, `VIPFloor`) |
 | `/buy SmallCash` | Run a product through the receipt code (`SmallCash`, `MediumCash`, `LargeCash`, `NextUpgrade`, `Prototype`) |
+| `/rebirths 2` | Set your rebirths (2 unlocks the 2nd floor) |
+| `/event GoldenRush` | Start an event (`GoldenRush`, `PowerSurge`, `CashFrenzy`, `RobotParade`) |
+| `/pet Omega` | Get a pet (`Bolt`, `Gear`, `Spark`, `Nova`, `Pulse`, `Omega`, `Celestia`) |
+| `/daily` | Make today's daily reward claimable again |
+| `/quests` | Finish all of today's quests |
 | `/save` | Save now |
 | `/wipe` | Reset your save and kick you |
 

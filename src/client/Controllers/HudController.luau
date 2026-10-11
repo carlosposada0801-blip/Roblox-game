@@ -56,7 +56,9 @@ function HudController:Start(controllers)
 		BackgroundColor3 = Theme.Background,
 		BackgroundTransparency = 0.1,
 		Parent = top,
-	}, { UIKit.corner(29), UIKit.stroke(Theme.Green, 3) })
+	}, { UIKit.corner(29), UIKit.stroke(Theme.Cyan, 3), UIKit.gradient(Color3.fromRGB(30, 60, 110), Color3.fromRGB(14, 18, 32)) })
+	cashFrame.BackgroundColor3 = Color3.new(1, 1, 1)
+	cashFrame.BackgroundTransparency = 0
 
 	local cashLabel = UIKit.label({
 		Size = UDim2.new(1, -24, 1, -10),
@@ -158,10 +160,10 @@ function HudController:Start(controllers)
 		tween.Completed:Connect(function()
 			popup:Destroy()
 		end)
-		local pop = TweenService:Create(cashFrame, TweenInfo.new(0.1), { BackgroundColor3 = Color3.fromRGB(40, 90, 50) })
+		local pop = TweenService:Create(cashFrame, TweenInfo.new(0.1), { BackgroundColor3 = Color3.fromRGB(140, 255, 170) })
 		pop:Play()
 		pop.Completed:Connect(function()
-			TweenService:Create(cashFrame, TweenInfo.new(0.3), { BackgroundColor3 = Theme.Background }):Play()
+			TweenService:Create(cashFrame, TweenInfo.new(0.3), { BackgroundColor3 = Color3.new(1, 1, 1) }):Play()
 		end)
 	end)
 

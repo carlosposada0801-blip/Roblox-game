@@ -5,6 +5,7 @@
 ]]
 
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 
 local UIKit = require(script.Parent.Parent.UI.UIKit)
 local Net = require(script.Parent.Parent.Net)
@@ -51,8 +52,36 @@ function ArenaController:Start()
 		Net.Fire("ArenaAction", "Leave")
 	end)
 
+	-- Round info above the buttons
+	local info = UIKit.label({
+		AnchorPoint = Vector2.new(0.5, 1),
+		Position = UDim2.new(0.5, 0, 1, -162),
+		Size = UDim2.fromOffset(520, 30),
+		BackgroundColor3 = Theme.Background,
+		BackgroundTransparency = 0.2,
+		Font = Theme.Title,
+		MaxTextSize = 20,
+		Visible = false,
+		Parent = UIKit.root(),
+	})
+	UIKit.corner(10).Parent = info
+	RunService.Heartbeat:Connect(function()
+		if not info.Visible then
+			return
+		end
+		local remaining = math.max(0, (workspace:GetAttribute("ArenaRoundEndsAt") or 0) - workspace:GetServerTimeNow())
+		local leader = workspace:GetAttribute("ArenaLeader") or ""
+		info.Text = ("⏱ %d:%02d   •   Your score: %d   •   %s"):format(
+			remaining // 60,
+			math.floor(remaining % 60),
+			player:GetAttribute("ArenaScore") or 0,
+			if leader ~= "" then "👑 " .. leader else "Stand on the glowing hill for points!"
+		)
+	end)
+
 	local function update()
 		bar.Visible = player:GetAttribute("InArena") == true
+		info.Visible = bar.Visible
 		local prototypes = player:GetAttribute("Prototypes") or 0
 		deploy.Visible = prototypes > 0
 		deploy.Text = if player:GetAttribute("PrototypeDeployed")

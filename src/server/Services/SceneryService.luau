@@ -15,6 +15,7 @@
 	stop the whole server script.
 ]]
 
+local CollectionService = game:GetService("CollectionService")
 local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -297,6 +298,188 @@ local function buildProps(folder)
 	end
 end
 
+-- Industrial skyline ---------------------------------------------------------
+
+local WINDOW_COLORS = {
+	Color3.fromRGB(0, 220, 255),
+	Color3.fromRGB(255, 200, 60),
+	Color3.fromRGB(255, 90, 200),
+	Color3.fromRGB(120, 255, 140),
+}
+
+local function buildFactoryBuilding(parent, x, z)
+	local model = Instance.new("Model")
+	model.Name = "FactoryBuilding"
+	local width = rng:NextNumber(22, 40)
+	local depth = rng:NextNumber(18, 30)
+	local height = rng:NextNumber(28, 80)
+	-- Face the map center so the lit windows are visible from the plots
+	local base = CFrame.lookAt(Vector3.new(x, GROUND_Y, z), Vector3.new(0, GROUND_Y, 0))
+	local windowColor = WINDOW_COLORS[rng:NextInteger(1, #WINDOW_COLORS)]
+
+	part({
+		Name = "Block",
+		Size = Vector3.new(width, height, depth),
+		CFrame = base * CFrame.new(0, height / 2, 0),
+		Color = Color3.fromRGB(rng:NextInteger(38, 60), rng:NextInteger(40, 62), rng:NextInteger(50, 72)),
+		Material = Enum.Material.Concrete,
+	}, model)
+
+	-- Rows of glowing windows on the side facing the center
+	for row = 1, math.floor(height / 8) - 1 do
+		part({
+			Name = "Windows",
+			Size = Vector3.new(width - 4, 1.4, 0.3),
+			CFrame = base * CFrame.new(0, row * 8, -depth / 2 - 0.15),
+			Color = windowColor,
+			Material = Enum.Material.Neon,
+			Transparency = rng:NextNumber() < 0.25 and 0.7 or 0,
+			CastShadow = false,
+		}, model)
+	end
+
+	-- Smokestacks
+	for i = 1, rng:NextInteger(1, 3) do
+		local stackHeight = rng:NextNumber(14, 30)
+		local stack = part({
+			Name = "Smokestack",
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(stackHeight, 4, 4),
+			CFrame = base * CFrame.new(-width / 2 + 5 + (i - 1) * 7, height + stackHeight / 2, depth / 4) * CFrame.Angles(0, 0, math.rad(90)),
+			Color = Color3.fromRGB(70, 60, 60),
+			Material = Enum.Material.Metal,
+		}, model)
+		part({
+			Name = "StackBand",
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(1.5, 4.3, 4.3),
+			CFrame = stack.CFrame * CFrame.new(stackHeight / 2 - 2, 0, 0),
+			Color = Color3.fromRGB(255, 200, 40),
+			Material = Enum.Material.SmoothPlastic,
+		}, model)
+		local smoke = Instance.new("Smoke")
+		smoke.Color = Color3.fromRGB(110, 105, 115)
+		smoke.Opacity = 0.12
+		smoke.RiseVelocity = 6
+		smoke.Size = 6
+		smoke.Parent = stack
+	end
+
+	-- Blinking aircraft-warning light on the roof
+	local beacon = part({
+		Name = "RoofLight",
+		Shape = Enum.PartType.Ball,
+		Size = Vector3.new(1.6, 1.6, 1.6),
+		CFrame = base * CFrame.new(width / 2 - 2, height + 1, -depth / 2 + 2),
+		Color = Color3.fromRGB(255, 50, 50),
+		Material = Enum.Material.Neon,
+	}, model)
+	beacon:SetAttribute("Blink", true)
+
+	model.Parent = parent
+end
+
+local function buildSkyline(folder)
+	local skyline = Instance.new("Folder")
+	skyline.Name = "Skyline"
+	skyline.Parent = folder
+	local config = World.Skyline
+	local placed = 0
+	for _ = 1, config.Count * 6 do
+		if placed >= config.Count then
+			break
+		end
+		local x, z = randomOpenPoint(config.MaxDistance, 30)
+		if x and Vector2.new(x, z).Magnitude >= config.MinDistance then
+			buildFactoryBuilding(skyline, x, z)
+			placed += 1
+			if placed % 4 == 0 then
+				task.wait()
+			end
+		end
+	end
+end
+
+-- Lobby decorations ------------------------------------------------------------
+
+local function buildMascot(parent, x, facing)
+	local model = Instance.new("Model")
+	model.Name = "RobotMascot"
+	local base = CFrame.lookAt(Vector3.new(x, 0, 0), Vector3.new(x + facing, 0, 0))
+	local steel = Color3.fromRGB(190, 195, 205)
+	local accent = Color3.fromRGB(255, 170, 0)
+	local function piece(name, size, offset, color, material)
+		return part({ Name = name, Size = size, CFrame = base * offset, Color = color, Material = material or Enum.Material.Metal }, model)
+	end
+	piece("Pedestal", Vector3.new(16, 3, 16), CFrame.new(0, 1.5, 0), Color3.fromRGB(40, 42, 50), Enum.Material.DiamondPlate)
+	piece("PedestalTrim", Vector3.new(16.4, 0.6, 16.4), CFrame.new(0, 3, 0), accent, Enum.Material.Neon)
+	piece("LegL", Vector3.new(3, 10, 3), CFrame.new(-2.5, 8, 0), steel)
+	piece("LegR", Vector3.new(3, 10, 3), CFrame.new(2.5, 8, 0), steel)
+	piece("Torso", Vector3.new(10, 10, 6), CFrame.new(0, 18, 0), accent)
+	piece("ChestLight", Vector3.new(3, 3, 0.4), CFrame.new(0, 19, -3.1), Color3.fromRGB(0, 230, 255), Enum.Material.Neon)
+	piece("ArmL", Vector3.new(2.5, 9, 2.5), CFrame.new(-6.5, 17, 0) * CFrame.Angles(0, 0, math.rad(-15)), steel)
+	piece("ArmR", Vector3.new(2.5, 9, 2.5), CFrame.new(6.5, 19, -2) * CFrame.Angles(math.rad(-150), 0, math.rad(15)), steel) -- waving
+	piece("Head", Vector3.new(6, 5, 5), CFrame.new(0, 25.5, 0), steel)
+	piece("Visor", Vector3.new(5, 1.4, 0.3), CFrame.new(0, 26, -2.6), Color3.fromRGB(0, 230, 255), Enum.Material.Neon)
+	piece("Antenna", Vector3.new(0.4, 3, 0.4), CFrame.new(0, 29.5, 0), steel)
+	local tip = piece("AntennaTip", Vector3.new(1.2, 1.2, 1.2), CFrame.new(0, 31.4, 0), Color3.fromRGB(255, 60, 60), Enum.Material.Neon)
+	tip.Shape = Enum.PartType.Ball
+	tip:SetAttribute("Blink", true)
+	model.Parent = parent
+end
+
+local function buildLobbyDecor(folder)
+	local plaza = World.Plaza
+	-- Hazard edges along the plaza
+	for _, z in ipairs({ -plaza.Size.Z / 2 + 0.6, plaza.Size.Z / 2 - 0.6 }) do
+		part({
+			Name = "PlazaEdge",
+			Size = Vector3.new(plaza.Size.X, 0.25, 1.2),
+			CFrame = CFrame.new(0, 0.2, z),
+			Color = Color3.fromRGB(255, 200, 40),
+			Material = Enum.Material.Neon,
+			CanCollide = false,
+		}, folder)
+	end
+
+	-- Giant mascots at both ends of the aisle, facing the middle
+	buildMascot(folder, -plaza.Size.X / 2 + 2, 1)
+	buildMascot(folder, plaza.Size.X / 2 - 2, -1)
+
+	-- Floating hologram title over the walkway
+	local anchor = part({
+		Name = "TitleAnchor",
+		Size = Vector3.new(1, 1, 1),
+		CFrame = CFrame.new(0, 34, 0),
+		Transparency = 1,
+		CanCollide = false,
+		CanQuery = false,
+	}, folder)
+	local billboard = Instance.new("BillboardGui")
+	billboard.Name = "Title"
+	billboard.Size = UDim2.fromScale(90, 18) -- in studs
+	billboard.LightInfluence = 0
+	billboard.MaxDistance = 600
+	local title = Instance.new("TextLabel")
+	title.Size = UDim2.fromScale(1, 0.65)
+	title.BackgroundTransparency = 1
+	title.Font = Enum.Font.Michroma
+	title.TextScaled = true
+	title.TextColor3 = Color3.fromRGB(0, 230, 255)
+	title.TextStrokeColor3 = Color3.fromRGB(80, 0, 140)
+	title.TextStrokeTransparency = 0
+	title.Text = "ROBOT FACTORY"
+	title.Parent = billboard
+	local subtitle = title:Clone()
+	subtitle.Position = UDim2.fromScale(0, 0.62)
+	subtitle.Size = UDim2.fromScale(1, 0.38)
+	subtitle.Font = Enum.Font.Sarpanch
+	subtitle.TextColor3 = Color3.fromRGB(255, 200, 40)
+	subtitle.Text = "TYCOON"
+	subtitle.Parent = billboard
+	billboard.Parent = anchor
+end
+
 -- Plaza, lamps and walkway ---------------------------------------------------
 
 local function buildPlaza(folder)
@@ -306,7 +489,7 @@ local function buildPlaza(folder)
 		Size = plaza.Size,
 		CFrame = CFrame.new(0, plaza.Size.Y / 2, 0),
 		Color = plaza.Color,
-		Material = Enum.Material.Pavement,
+		Material = Enum.Material.DiamondPlate,
 	}, folder)
 
 	-- Street lamps along both edges of the aisle
@@ -352,6 +535,7 @@ local function buildWalkway(folder)
 		belt:SetAttribute("Direction", lane.Direction)
 		belt:SetAttribute("Speed", config.Speed)
 		belt:SetAttribute("Color", lane.Color)
+		CollectionService:AddTag(belt, "MovingArrows")
 
 		-- Glowing side trim
 		for _, side in ipairs({ -1, 1 }) do
@@ -397,6 +581,7 @@ function SceneryService:Init()
 	buildPlatform(folder)
 	buildPlaza(folder)
 	buildWalkway(folder)
+	buildLobbyDecor(folder)
 
 	-- Heavy terrain and props in the background
 	task.spawn(function()
@@ -404,6 +589,7 @@ function SceneryService:Init()
 		buildGround()
 		buildTerrain()
 		buildProps(folder)
+		buildSkyline(folder)
 		print(("[SceneryService] World built in %.1fs"):format(os.clock() - started))
 	end)
 end

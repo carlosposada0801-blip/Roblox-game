@@ -10,6 +10,11 @@
 	  /pass <name>       grant a game pass: DoubleCash, AutoCollect, FasterConveyors, VIPFloor
 	  /buy <name>        run a developer product through ProcessReceipt's grant code:
 	                     SmallCash, MediumCash, LargeCash, NextUpgrade, Prototype
+	  /rebirths <n>      set your rebirth count (try 2 to unlock the 2nd floor)
+	  /event <id>        start an event: GoldenRush, PowerSurge, CashFrenzy, RobotParade
+	  /pet <type>        get a pet: Bolt, Gear, Spark, Nova, Pulse, Omega, Celestia
+	  /daily             make today's daily reward claimable again
+	  /quests            finish all of today's quests
 	  /save              force a save right now
 	  /wipe              reset your data to a new player's and kick you
 	  /help              list commands
@@ -25,6 +30,9 @@ function DevCommands:Init(services)
 	local TycoonService = services.TycoonService
 	local ProductionService = services.ProductionService
 	local MonetizationService = services.MonetizationService
+	local EventService = services.EventService
+	local PetService = services.PetService
+	local QuestService = services.QuestService
 
 	local commands = {}
 
@@ -72,6 +80,41 @@ function DevCommands:Init(services)
 		print(result and ("[Dev] Product result: " .. tostring(result)) or "[Dev] Unknown product. Try SmallCash, MediumCash, LargeCash, NextUpgrade, Prototype")
 	end
 
+	commands["/rebirths"] = function(player, args)
+		local data = DataService:GetData(player)
+		data.Rebirths = math.max(0, math.floor(tonumber(args[2]) or 2))
+		EconomyService:Refresh(player)
+		services.TycoonService:ResetTycoon(player)
+		print("[Dev] Rebirths set to", data.Rebirths)
+	end
+
+	commands["/event"] = function(_, args)
+		print(EventService:StartEvent(args[2] or "") and "[Dev] Event started" or "[Dev] Unknown event. Try GoldenRush, PowerSurge, CashFrenzy, RobotParade")
+	end
+
+	commands["/pet"] = function(player, args)
+		print(PetService:GivePet(player, args[2] or "") and "[Dev] Pet added" or "[Dev] Unknown pet or inventory full")
+	end
+
+	commands["/daily"] = function(player)
+		local data = DataService:GetData(player)
+		data.Daily.LastDay = 0
+		player:SetAttribute("DailyAvailable", true)
+		print("[Dev] Daily reward is claimable again (rejoin to see the popup)")
+	end
+
+	commands["/quests"] = function(player)
+		local data = DataService:GetData(player)
+		local QuestConfig = require(game:GetService("ReplicatedStorage").Shared.Config.QuestConfig)
+		for _, entry in ipairs(data.Quests.List) do
+			for _, quest in ipairs(QuestConfig.Pool) do
+				if quest.Id == entry.Id then
+					QuestService:Track(player, quest.Stat, entry.Goal)
+				end
+			end
+		end
+	end
+
 	commands["/save"] = function(player)
 		local ok = DataService:SaveAsync(player)
 		print(("[Dev] Save for %s: %s"):format(player.Name, ok and "OK" or "FAILED"))
@@ -83,7 +126,7 @@ function DevCommands:Init(services)
 	end
 
 	commands["/help"] = function()
-		print("[Dev] Commands: /cash, /robots, /unlockall, /prototype, /pass <name>, /buy <name>, /save, /wipe, /help")
+		print("[Dev] Commands: /cash, /robots, /unlockall, /prototype, /pass, /buy, /rebirths, /event, /pet, /daily, /quests, /save, /wipe, /help")
 	end
 
 	local function hook(player)

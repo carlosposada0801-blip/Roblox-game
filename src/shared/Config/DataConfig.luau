@@ -33,6 +33,15 @@ DataConfig.Template = {
 	RobotsBuilt = 0, -- lifetime robots sold
 	Prototypes = 0, -- Prototype robots owned (arena)
 	ProcessedReceipts = {}, -- [purchaseId] = os.time(), stops double grants
+	ArenaWins = 0,
+	Likes = 0, -- likes other players gave your factory
+	LikesGiven = { Day = 0, Ids = {} }, -- who you've liked today
+	Levels = {}, -- [itemId] = upgrade level (reset on rebirth)
+	Collection = {}, -- ["Rarity|Color"] = robots sold
+	Pets = {}, -- list of { Id = number, Type = petType, Equipped = bool }
+	NextPetId = 1,
+	Daily = { LastDay = 0, Streak = 0 },
+	Quests = { Day = 0, List = {} },
 	Settings = {
 		GuideArrow = true, -- arrow pointing at the next thing to buy
 	},

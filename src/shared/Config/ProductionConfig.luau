@@ -41,15 +41,15 @@ ProductionConfig.Stages = {
 	},
 }
 
--- Random colors the Painter can apply
+-- Random colors the Painter can apply (names are used by the Robot Collection Book)
 ProductionConfig.PaintColors = {
-	Color3.fromRGB(255, 60, 60),
-	Color3.fromRGB(255, 170, 0),
-	Color3.fromRGB(255, 240, 60),
-	Color3.fromRGB(60, 220, 100),
-	Color3.fromRGB(0, 170, 255),
-	Color3.fromRGB(170, 85, 255),
-	Color3.fromRGB(255, 100, 200),
+	{ Name = "Red", Color = Color3.fromRGB(255, 60, 60) },
+	{ Name = "Orange", Color = Color3.fromRGB(255, 170, 0) },
+	{ Name = "Yellow", Color = Color3.fromRGB(255, 240, 60) },
+	{ Name = "Green", Color = Color3.fromRGB(60, 220, 100) },
+	{ Name = "Blue", Color = Color3.fromRGB(0, 170, 255) },
+	{ Name = "Purple", Color = Color3.fromRGB(170, 85, 255) },
+	{ Name = "Pink", Color = Color3.fromRGB(255, 100, 200) },
 }
 
 return ProductionConfig

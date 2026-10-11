@@ -21,12 +21,12 @@ PlotConfig.AisleWidth = 60 -- walkway between the two rows (the lobby spawn sits
 PlotConfig.Origin = Vector3.new(0, 0, 0) -- ground height and center of the whole layout
 
 -- Lobby spawn (world position). The middle of the aisle is the speedy walkway.
-PlotConfig.LobbySpawn = Vector3.new(-40, 0.5, 19)
+PlotConfig.LobbySpawn = Vector3.new(-80, 0.5, 15)
 
 -- Where the owner appears, relative to the plot center
 PlotConfig.SpawnOffset = CFrame.new(0, 4, 42)
 
-PlotConfig.BaseColor = Color3.fromRGB(62, 66, 74)
+PlotConfig.BaseColor = Color3.fromRGB(46, 50, 60)
 PlotConfig.BaseMaterial = Enum.Material.DiamondPlate
 
 -- One accent color per plot (border + sign). Extra plots reuse colors.

@@ -12,18 +12,20 @@ local Sfx = require(script.Parent.Parent.Sfx)
 local UIKit = {}
 
 UIKit.Theme = {
-	Background = Color3.fromRGB(22, 24, 30),
-	Panel = Color3.fromRGB(32, 35, 44),
-	PanelLight = Color3.fromRGB(44, 48, 60),
+	Background = Color3.fromRGB(14, 18, 32),
+	Panel = Color3.fromRGB(24, 30, 50),
+	PanelLight = Color3.fromRGB(38, 46, 72),
 	Accent = Color3.fromRGB(255, 170, 0),
-	Green = Color3.fromRGB(60, 200, 100),
-	Red = Color3.fromRGB(225, 70, 70),
-	Blue = Color3.fromRGB(0, 150, 255),
+	Cyan = Color3.fromRGB(0, 210, 255),
+	Green = Color3.fromRGB(40, 200, 110),
+	Red = Color3.fromRGB(230, 60, 80),
+	Blue = Color3.fromRGB(0, 140, 255),
 	Purple = Color3.fromRGB(150, 70, 255),
-	Disabled = Color3.fromRGB(80, 84, 95),
+	Pink = Color3.fromRGB(255, 80, 180),
+	Disabled = Color3.fromRGB(70, 76, 92),
 	Text = Color3.fromRGB(255, 255, 255),
-	SubText = Color3.fromRGB(175, 180, 192),
-	Title = Enum.Font.FredokaOne,
+	SubText = Color3.fromRGB(160, 180, 210),
+	Title = Enum.Font.Sarpanch,
 	Body = Enum.Font.GothamMedium,
 }
 local Theme = UIKit.Theme
@@ -73,6 +75,14 @@ function UIKit.create(className: string, props, children)
 	return instance
 end
 local create = UIKit.create
+
+-- Vertical gradient between two colors
+function UIKit.gradient(top, bottom, rotation)
+	return create("UIGradient", {
+		Color = ColorSequence.new(top, bottom),
+		Rotation = rotation or 90,
+	})
+end
 
 function UIKit.corner(radius)
 	return create("UICorner", { CornerRadius = UDim.new(0, radius or 12) })
@@ -135,6 +145,8 @@ function UIKit.button(props, onClick)
 	local button = create("TextButton", defaults, {
 		UIKit.corner(10),
 		UIKit.stroke(shade(color, -0.35), 2),
+		-- Glossy shine: lighter at the top
+		UIKit.gradient(Color3.new(1, 1, 1), Color3.fromRGB(175, 175, 190)),
 		create("UITextSizeConstraint", { MaxTextSize = 24 }),
 		create("UIPadding", { PaddingLeft = UDim.new(0, 6), PaddingRight = UDim.new(0, 6), PaddingTop = UDim.new(0, 4), PaddingBottom = UDim.new(0, 4) }),
 	})
@@ -185,11 +197,12 @@ function UIKit.window(title: string, accent: Color3, size: Vector2?)
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 0.5),
 		Size = UDim2.fromOffset(windowSize.X, windowSize.Y),
-		BackgroundColor3 = Theme.Background,
+		BackgroundColor3 = Color3.new(1, 1, 1),
 		Visible = false,
 	}, {
 		UIKit.corner(16),
 		UIKit.stroke(accent, 3),
+		UIKit.gradient(Color3.fromRGB(20, 26, 48), Color3.fromRGB(30, 14, 48)),
 		create("UIScale", { Name = "OpenScale" }),
 	})
 
@@ -198,7 +211,7 @@ function UIKit.window(title: string, accent: Color3, size: Vector2?)
 		Size = UDim2.new(1, 0, 0, 52),
 		BackgroundColor3 = accent,
 		Parent = window,
-	}, { UIKit.corner(16) })
+	}, { UIKit.corner(16), UIKit.gradient(Color3.new(1, 1, 1), Color3.fromRGB(150, 150, 170)) })
 	-- Square off the header's bottom corners
 	create("Frame", {
 		Size = UDim2.new(1, 0, 0, 16),
@@ -206,7 +219,7 @@ function UIKit.window(title: string, accent: Color3, size: Vector2?)
 		BackgroundColor3 = accent,
 		BorderSizePixel = 0,
 		Parent = header,
-	})
+	}, { UIKit.gradient(Color3.fromRGB(190, 190, 205), Color3.fromRGB(150, 150, 170)) })
 	UIKit.label({
 		Size = UDim2.new(1, -70, 1, -12),
 		Position = UDim2.fromOffset(18, 6),
@@ -241,6 +254,32 @@ function UIKit.window(title: string, accent: Color3, size: Vector2?)
 	})
 
 	return window, content
+end
+
+-- A dark rounded card used inside windows
+function UIKit.card(props, accent)
+	local defaults = { BackgroundColor3 = Theme.Panel }
+	for key, value in pairs(props) do
+		defaults[key] = value
+	end
+	return create("Frame", defaults, {
+		UIKit.corner(12),
+		UIKit.stroke(accent or Theme.PanelLight, 2),
+		UIKit.gradient(Color3.fromRGB(255, 255, 255), Color3.fromRGB(200, 200, 215)),
+	})
+end
+
+-- Progress bar; returns (frame, setProgress(fraction, text))
+function UIKit.progressBar(props, color)
+	local bar = create("Frame", props, { UIKit.corner(8) })
+	bar.BackgroundColor3 = Theme.PanelLight
+	bar.ClipsDescendants = true
+	local fill = create("Frame", { Size = UDim2.fromScale(0, 1), BackgroundColor3 = color or Theme.Cyan, Parent = bar }, { UIKit.corner(8) })
+	local text = UIKit.label({ Size = UDim2.fromScale(1, 1), Font = Theme.Title, MaxTextSize = 16, ZIndex = 2, Parent = bar })
+	return bar, function(fraction, label)
+		TweenService:Create(fill, TweenInfo.new(0.2), { Size = UDim2.fromScale(math.clamp(fraction, 0, 1), 1) }):Play()
+		text.Text = label or ""
+	end
 end
 
 function UIKit.open(window)

@@ -14,6 +14,7 @@
 	  * one throttled Heartbeat loop (20 Hz) handles every plot's items
 ]]
 
+local CollectionService = game:GetService("CollectionService")
 local Debris = game:GetService("Debris")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -26,6 +27,7 @@ local MonetizationConfig = require(Shared.Config.MonetizationConfig)
 local Format = require(Shared.Util.Format)
 
 local EconomyService, TycoonService, PlotService, PlayerService, WorkerService, Net
+local EventService, UpgradeService, RobotBookService, QuestService
 
 local Stages = ProductionConfig.Stages
 local UPDATE_INTERVAL = 1 / 20
@@ -95,22 +97,27 @@ local function refreshBelts(st)
 	if not st then
 		return
 	end
-	local speed = ProductionConfig.BeltSpeed * st.ConveyorMultiplier
+	local speed = ProductionConfig.BeltSpeed * st.ConveyorMultiplier * EventService:GetValue("BeltMultiplier", 1)
 	if st.Player:GetAttribute("Pass_FasterConveyors") then
 		speed *= MonetizationConfig.FasterConveyorMultiplier
 	end
 
 	-- An anchored part with velocity carries whatever sits on it.
+	-- The MovingArrows tag makes clients draw arrows sliding along it.
 	for _, belt in ipairs(st.Belts) do
 		if belt.Parent then
 			belt.AssemblyLinearVelocity = belt.CFrame.RightVector * speed
+			belt:SetAttribute("Direction", 1)
+			belt:SetAttribute("Speed", speed)
+			belt:SetAttribute("Color", Color3.fromRGB(255, 200, 40))
+			CollectionService:AddTag(belt, "MovingArrows")
 		end
 	end
 end
 
 -- Items ----------------------------------------------------------------------
 
-local function addRobotDetails(body, prototype)
+local function addRobotDetails(body, prototype, rarity)
 	local head = Instance.new("Part")
 	head.Name = "Head"
 	head.Size = Vector3.new(1.2, 0.9, 1)
@@ -124,7 +131,7 @@ local function addRobotDetails(body, prototype)
 	eyes.Name = "Eyes"
 	eyes.Size = Vector3.new(0.9, 0.25, 0.1)
 	eyes.CFrame = head.CFrame * CFrame.new(0, 0.1, -0.5)
-	eyes.Color = if prototype then Color3.fromRGB(255, 60, 255) else Color3.fromRGB(0, 255, 255)
+	eyes.Color = if prototype then Color3.fromRGB(255, 60, 255) elseif rarity then rarity.Color else Color3.fromRGB(0, 255, 255)
 	eyes.Material = Enum.Material.Neon
 	eyes.CanCollide = false
 	eyes.Massless = true
@@ -135,6 +142,37 @@ local function addRobotDetails(body, prototype)
 		weld.Part1 = part
 		weld.Parent = part
 		part.Parent = body
+	end
+
+	-- Rarity: colored head, glow for Rare+, sparkles and a tag for Epic+
+	if rarity and not prototype and rarity.Id ~= "Common" then
+		head.Color = rarity.Color
+		if rarity.ValueMultiplier >= 2.5 then
+			head.Material = Enum.Material.Neon
+			local light = Instance.new("PointLight")
+			light.Color = rarity.Color
+			light.Range = 8
+			light.Parent = head
+		end
+		if rarity.ValueMultiplier >= 5 then
+			local sparkles = Instance.new("Sparkles")
+			sparkles.SparkleColor = rarity.Color
+			sparkles.Parent = body
+			local tag = Instance.new("BillboardGui")
+			tag.Size = UDim2.fromOffset(110, 26)
+			tag.StudsOffset = Vector3.new(0, 2.8, 0)
+			tag.MaxDistance = 80
+			local text = Instance.new("TextLabel")
+			text.Size = UDim2.fromScale(1, 1)
+			text.BackgroundTransparency = 1
+			text.Font = Enum.Font.Sarpanch
+			text.TextScaled = true
+			text.TextColor3 = rarity.Color
+			text.TextStrokeTransparency = 0
+			text.Text = string.upper(rarity.Id)
+			text.Parent = tag
+			tag.Parent = body
+		end
 	end
 
 	if prototype then
@@ -192,7 +230,15 @@ local function createDrop(st, stage, value, cframe, options)
 	part:SetAttribute("Value", value)
 
 	if stage == "Robot" then
-		addRobotDetails(part, options.Prototype)
+		addRobotDetails(part, options.Prototype, options.Rarity)
+	end
+	if options.Golden then
+		part.Name = "Golden" .. stage
+		part.Color = Color3.fromRGB(255, 200, 40)
+		part.Material = Enum.Material.Neon
+		local sparkles = Instance.new("Sparkles")
+		sparkles.SparkleColor = Color3.fromRGB(255, 220, 80)
+		sparkles.Parent = part
 	end
 
 	local record = {
@@ -201,7 +247,10 @@ local function createDrop(st, stage, value, cframe, options)
 		Stage = stage,
 		Visited = options.Visited or {},
 		Color = options.Color,
+		PaintName = options.PaintName,
 		Prototype = options.Prototype,
+		Rarity = options.Rarity,
+		Golden = options.Golden,
 	}
 
 	part.Parent = st.Plot.Model.Drops
@@ -233,7 +282,9 @@ local function startDropper(player, st, item, model)
 
 	task.spawn(function()
 		while model.Parent and isCurrent(player, st) do
-			task.wait(config.Interval / WorkerService:GetDropperSpeedMultiplier(player))
+			local _, speedBoost = UpgradeService:GetDropperBoosts(player, item.Id)
+			local speed = WorkerService:GetDropperSpeedMultiplier(player) * speedBoost * EventService:GetValue("DropperMultiplier", 1)
+			task.wait(config.Interval / speed)
 			if not (model.Parent and isCurrent(player, st)) then
 				break
 			end
@@ -243,14 +294,19 @@ local function startDropper(player, st, item, model)
 
 			local jitter = Vector3.new((math.random() - 0.5) * 0.6, 0, (math.random() - 0.5) * 0.6)
 			local position = spout.Position - Vector3.new(0, spout.Size.Y / 2 + size.Y / 2 + 0.1, 0) + jitter
-			if createDrop(st, stage, config.Value, CFrame.new(position) * st.Plot.CFrame.Rotation) then
+			local value = config.Value * (UpgradeService:GetDropperBoosts(player, item.Id))
+			local golden = math.random() < EventService:GetValue("GoldenChance", 0)
+			if golden then
+				value *= EventService:GetValue("GoldenMultiplier", 1)
+			end
+			if createDrop(st, stage, value, CFrame.new(position) * st.Plot.CFrame.Rotation, { Golden = golden }) then
 				pulse(spout)
 			end
 		end
 	end)
 end
 
-local function spawnRobot(player, st, machine, value, color, visited)
+local function spawnRobot(player, st, machine, value, color, paintName, visited)
 	if not (isCurrent(player, st) and machine.Zone.Parent) then
 		return
 	end
@@ -262,11 +318,16 @@ local function spawnRobot(player, st, machine, value, color, visited)
 		Net:Notify(player, "A PROTOTYPE robot just rolled off your line!", "special")
 	end
 
+	local rarity = RobotBookService:RollRarity()
+	value *= rarity.ValueMultiplier
+
 	local zone = machine.Zone
 	createDrop(st, "Robot", value, zone.CFrame * CFrame.new(zone.Size.X / 2 + 1.2, 0, 0), {
 		Force = true,
 		Color = color,
+		PaintName = paintName,
 		Prototype = prototype,
+		Rarity = rarity,
 		Visited = visited,
 	})
 end
@@ -279,7 +340,9 @@ local function process(player, st, machine, record)
 		return
 	end
 
-	local multiplier = (config.Multiplier or 1) * WorkerService:GetMachineMultiplier(player, machine.Item.Id)
+	local multiplier = (config.Multiplier or 1)
+		* WorkerService:GetMachineMultiplier(player, machine.Item.Id)
+		* UpgradeService:GetMachineMultiplier(player, machine.Item.Id)
 	local part = record.Part
 	pulse(machine.Glow)
 
@@ -290,12 +353,23 @@ local function process(player, st, machine, record)
 		buffer.Count += 1
 		buffer.Value += record.Value
 		buffer.Color = record.Color or buffer.Color
+		buffer.PaintName = record.PaintName or buffer.PaintName
 		part:Destroy()
 
-		if buffer.Count >= config.PartsPerRobot then
+		local needed = EventService:GetValue("PartsPerRobot", config.PartsPerRobot)
+		if buffer.Count >= needed then
 			st.Assembly[machine.Item.Id] = nil
 			-- Deferred: we're in the middle of looping over this plot's items
-			task.defer(spawnRobot, player, st, machine, buffer.Value * multiplier, buffer.Color, table.clone(record.Visited))
+			task.defer(
+				spawnRobot,
+				player,
+				st,
+				machine,
+				buffer.Value * multiplier,
+				buffer.Color,
+				buffer.PaintName,
+				table.clone(record.Visited)
+			)
 		end
 		return
 	end
@@ -307,15 +381,19 @@ local function process(player, st, machine, record)
 		record.Stage = config.Output
 		part.Name = config.Output
 		part.Size = style.Size
-		part.Material = style.Material
-		part.Color = record.Color or style.Color
+		if not record.Golden then
+			part.Material = style.Material
+			part.Color = record.Color or style.Color
+		end
 	end
 
 	if config.Paint then
-		local color = ProductionConfig.PaintColors[math.random(#ProductionConfig.PaintColors)]
-		record.Color = color
-		part.Color = color
+		local paint = ProductionConfig.PaintColors[math.random(#ProductionConfig.PaintColors)]
+		record.Color = paint.Color
+		record.PaintName = paint.Name
+		part.Color = paint.Color
 		part.Reflectance = 0.15
+		QuestService:Track(player, "ItemsPainted", 1)
 	end
 
 	part:SetAttribute("Stage", record.Stage)
@@ -329,6 +407,10 @@ local function collect(player, st, record)
 	if record.Stage == "Robot" then
 		EconomyService:AddStat(player, "Robots", 1)
 		EconomyService:AddStat(player, "RobotsBuilt", 1)
+		QuestService:Track(player, "RobotsSold", 1)
+		if record.Rarity then
+			RobotBookService:Record(player, record.Rarity.Id, record.PaintName or "Steel")
+		end
 		if record.Prototype then
 			EconomyService:AddStat(player, "Prototypes", 1)
 			Net:NotifyAll(player.DisplayName .. " built a ★ PROTOTYPE ★ robot!", "special")
@@ -445,6 +527,8 @@ local function setupCashPad(player, st, pad)
 		if collected > 0 then
 			Net:Fire(player, "CashPopup", collected)
 			Net:Fire(player, "Sfx", "Cash")
+			Net:Fire(player, "Fx", "Coins", pad.Position)
+			QuestService:Track(player, "PadCollects", 1)
 			pulse(pad)
 		end
 	end)
@@ -499,6 +583,10 @@ function ProductionService:Init(services)
 	PlayerService = services.PlayerService
 	WorkerService = services.WorkerService
 	Net = services.Net
+	EventService = services.EventService
+	UpgradeService = services.UpgradeService
+	RobotBookService = services.RobotBookService
+	QuestService = services.QuestService
 end
 
 function ProductionService:Start()
@@ -516,6 +604,13 @@ function ProductionService:Start()
 		player:GetAttributeChangedSignal("Pass_FasterConveyors"):Connect(function()
 			refreshBelts(plotStates[player])
 		end)
+	end)
+
+	-- Power Surge changes belt speed for everyone
+	EventService.Changed:Connect(function()
+		for _, st in pairs(plotStates) do
+			refreshBelts(st)
+		end
 	end)
 
 	local elapsed = 0

@@ -90,8 +90,11 @@ SceneryConfig.World = {
 	},
 	WaterColor = Color3.fromRGB(40, 140, 200),
 
+	-- Industrial skyline: factory buildings with smokestacks around the map
+	Skyline = { Count = 24, MinDistance = 280, MaxDistance = 460 },
+
 	-- Paved aisle between the two rows of plots
-	Plaza = { Size = Vector3.new(420, 0.2, 60), Color = Color3.fromRGB(95, 98, 110) },
+	Plaza = { Size = Vector3.new(420, 0.2, 60), Color = Color3.fromRGB(58, 62, 74) },
 	StreetLamps = { Spacing = 40, Z = 27 },
 }
 

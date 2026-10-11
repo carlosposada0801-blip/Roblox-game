@@ -10,6 +10,10 @@ return {
 	"Notify", -- (text, kind)
 	"CashPopup", -- (amount)
 	"Sfx", -- (soundName) plays a SoundConfig effect
+	"Fx", -- (kind, position?) visual effect: "Confetti", "Upgrade", "Rebirth", "Coins"
+	"PetHatched", -- (petType, eggId)
+	"TradeInvite", -- (fromUserId, fromName)
+	"TradeState", -- (state table)
 
 	-- client -> server
 	"RequestRebirth", -- ()
@@ -18,4 +22,14 @@ return {
 	"RequestPurchase", -- (kind: "Pass" | "Product", key)
 	"ArenaAction", -- (action: "Leave" | "Deploy" | "Recall")
 	"SetSetting", -- (key, value) player preferences from DataConfig.Template.Settings
+	"ClaimDaily", -- ()
+	"ClaimQuest", -- (index)
+	"HatchEgg", -- (eggId)
+	"PetAction", -- (action: "Equip" | "Unequip" | "Delete", petId)
+	"VisitPlot", -- (plotId)
+	"TradeRequest", -- (targetUserId)
+	"TradeRespond", -- (fromUserId, accept)
+	"TradeOffer", -- (robots, prototypes)
+	"TradeReady", -- (ready)
+	"TradeCancel", -- ()
 }

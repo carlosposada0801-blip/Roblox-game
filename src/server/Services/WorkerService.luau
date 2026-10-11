@@ -12,7 +12,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local WorkerConfig = require(Shared.Config.WorkerConfig)
 
-local DataService, EconomyService, PlotService, PlayerService, Net
+local DataService, EconomyService, PlotService, PlayerService, QuestService, Net
 
 local WorkerService = {}
 
@@ -114,6 +114,7 @@ local function hire(player, workerId)
 	data.Workers[worker.Id] = count + 1
 	renderWorkers(player)
 	Net:Fire(player, "Sfx", "Purchase")
+	QuestService:Track(player, "WorkersHired", 1)
 	Net:Notify(player, ("Hired a %s! %s"):format(worker.DisplayName, worker.Description), "success")
 end
 
@@ -138,6 +139,7 @@ function WorkerService:Init(services)
 	EconomyService = services.EconomyService
 	PlotService = services.PlotService
 	PlayerService = services.PlayerService
+	QuestService = services.QuestService
 	Net = services.Net
 end
 

@@ -58,18 +58,56 @@ local function computePlotCFrame(index)
 	end
 end
 
+-- Yellow/black hazard stripes around the edge, glowing corner pylons, and a faint floor grid
 local function buildBorder(model, plotCFrame, color)
 	local size = PlotConfig.PlotSize
 	local border = Instance.new("Folder")
 	border.Name = "Border"
 	border.Parent = model
 
-	local thickness, height = 1, 0.4
+	local stripeLength, height, width = 4, 0.3, 1.2
+	local yellow, black = Color3.fromRGB(255, 200, 40), Color3.fromRGB(25, 25, 28)
+	local halfX, halfZ = size.X / 2 - width / 2, size.Z / 2 - width / 2
+
+	-- Long edges (along X) and short edges (along Z)
+	local index = 0
+	for x = -size.X / 2 + stripeLength / 2, size.X / 2 - stripeLength / 2, stripeLength do
+		index += 1
+		for _, z in ipairs({ -halfZ, halfZ }) do
+			makePart({
+				Name = "Stripe",
+				CFrame = plotCFrame * CFrame.new(x, height / 2, z),
+				Size = Vector3.new(stripeLength, height, width),
+				Color = if index % 2 == 0 then yellow else black,
+				Material = Enum.Material.SmoothPlastic,
+				CanCollide = false,
+				Parent = border,
+			})
+		end
+	end
+	index = 0
+	for z = -size.Z / 2 + stripeLength / 2 + width, size.Z / 2 - stripeLength / 2 - width, stripeLength do
+		index += 1
+		for _, x in ipairs({ -halfX, halfX }) do
+			makePart({
+				Name = "Stripe",
+				CFrame = plotCFrame * CFrame.new(x, height / 2, z),
+				Size = Vector3.new(width, height, stripeLength),
+				Color = if index % 2 == 0 then yellow else black,
+				Material = Enum.Material.SmoothPlastic,
+				CanCollide = false,
+				Parent = border,
+			})
+		end
+	end
+
+	-- Inner neon outline in the plot's color
+	local inset = width + 0.4
 	local edges = {
-		{ CFrame.new(0, height / 2, -size.Z / 2 + thickness / 2), Vector3.new(size.X, height, thickness) },
-		{ CFrame.new(0, height / 2, size.Z / 2 - thickness / 2), Vector3.new(size.X, height, thickness) },
-		{ CFrame.new(-size.X / 2 + thickness / 2, height / 2, 0), Vector3.new(thickness, height, size.Z) },
-		{ CFrame.new(size.X / 2 - thickness / 2, height / 2, 0), Vector3.new(thickness, height, size.Z) },
+		{ CFrame.new(0, 0.05, -size.Z / 2 + inset), Vector3.new(size.X - inset * 2, 0.1, 0.4) },
+		{ CFrame.new(0, 0.05, size.Z / 2 - inset), Vector3.new(size.X - inset * 2, 0.1, 0.4) },
+		{ CFrame.new(-size.X / 2 + inset, 0.05, 0), Vector3.new(0.4, 0.1, size.Z - inset * 2) },
+		{ CFrame.new(size.X / 2 - inset, 0.05, 0), Vector3.new(0.4, 0.1, size.Z - inset * 2) },
 	}
 	for i, edge in ipairs(edges) do
 		makePart({
@@ -82,8 +120,40 @@ local function buildBorder(model, plotCFrame, color)
 			Parent = border,
 		})
 	end
+
+	-- Corner pylons with a glowing cap
+	for _, corner in ipairs({ { -1, -1 }, { 1, -1 }, { -1, 1 }, { 1, 1 } }) do
+		local x, z = corner[1] * (size.X / 2 - 1), corner[2] * (size.Z / 2 - 1)
+		makePart({ Name = "Pylon", CFrame = plotCFrame * CFrame.new(x, 2, z), Size = Vector3.new(2, 4, 2), Color = Color3.fromRGB(40, 42, 50), Material = Enum.Material.DiamondPlate, Parent = border })
+		local cap = makePart({ Name = "PylonCap", CFrame = plotCFrame * CFrame.new(x, 4.3, z), Size = Vector3.new(2.2, 0.6, 2.2), Color = color, Material = Enum.Material.Neon, Parent = border })
+		local light = Instance.new("PointLight")
+		light.Color = color
+		light.Range = 12
+		light.Brightness = 1.5
+		light.Parent = cap
+	end
+
+	-- Faint glowing floor grid
+	for offset = -size.X / 2 + 20, size.X / 2 - 20, 20 do
+		makePart({ Name = "Grid", CFrame = plotCFrame * CFrame.new(offset, 0.02, 0), Size = Vector3.new(0.2, 0.05, size.Z - 6), Color = color, Material = Enum.Material.Neon, Transparency = 0.75, CanCollide = false, CanQuery = false, Parent = border })
+		makePart({ Name = "Grid", CFrame = plotCFrame * CFrame.new(0, 0.02, offset), Size = Vector3.new(size.X - 6, 0.05, 0.2), Color = color, Material = Enum.Material.Neon, Transparency = 0.75, CanCollide = false, CanQuery = false, Parent = border })
+	end
 end
 
+local function makeLabel(parent, props)
+	local label = Instance.new("TextLabel")
+	label.BackgroundTransparency = 1
+	label.TextScaled = true
+	label.TextColor3 = Color3.new(1, 1, 1)
+	label.TextStrokeTransparency = 0.4
+	for key, value in pairs(props) do
+		label[key] = value
+	end
+	label.Parent = parent
+	return label
+end
+
+-- Industrial gate: hazard pillars, a big sign with the owner's name, spinning gears and warning lights
 local function buildGate(model, plotCFrame, color)
 	local size = PlotConfig.PlotSize
 	local gate = Instance.new("Model")
@@ -91,44 +161,45 @@ local function buildGate(model, plotCFrame, color)
 	gate.Parent = model
 
 	local frontZ = size.Z / 2 - 3
-	local postHeight = 14
-	for _, x in ipairs({ -14, 14 }) do
-		makePart({
-			Name = "Post",
-			CFrame = plotCFrame * CFrame.new(x, postHeight / 2, frontZ),
-			Size = Vector3.new(1.5, postHeight, 1.5),
-			Color = Color3.fromRGB(40, 40, 45),
-			Material = Enum.Material.Metal,
-			Parent = gate,
-		})
+	local postHeight = 16
+	for _, x in ipairs({ -16, 16 }) do
+		makePart({ Name = "Post", CFrame = plotCFrame * CFrame.new(x, postHeight / 2, frontZ), Size = Vector3.new(3, postHeight, 3), Color = Color3.fromRGB(40, 42, 50), Material = Enum.Material.DiamondPlate, Parent = gate })
+		for band = 1, 3 do
+			makePart({ Name = "PostStripe", CFrame = plotCFrame * CFrame.new(x, band * 4 - 1, frontZ), Size = Vector3.new(3.1, 1, 3.1), Color = Color3.fromRGB(255, 200, 40), Material = Enum.Material.SmoothPlastic, Parent = gate })
+		end
+		local lamp = makePart({ Name = "WarningLight", Shape = Enum.PartType.Ball, CFrame = plotCFrame * CFrame.new(x, postHeight + 0.8, frontZ), Size = Vector3.new(1.6, 1.6, 1.6), Color = Color3.fromRGB(255, 80, 40), Material = Enum.Material.Neon, Parent = gate })
+		lamp:SetAttribute("Blink", true)
+		local light = Instance.new("PointLight")
+		light.Color = Color3.fromRGB(255, 80, 40)
+		light.Range = 14
+		light.Parent = lamp
+		-- Spinning gear on each post
+		makePart({ Name = "Gear", CFrame = plotCFrame * CFrame.new(x, postHeight - 3, frontZ + 1.7) * CFrame.Angles(math.rad(90), 0, 0), Size = Vector3.new(4.5, 0.4, 0.9), Color = color, Material = Enum.Material.Neon, Parent = gate }):SetAttribute("Spin", 2)
+		makePart({ Name = "Gear", CFrame = plotCFrame * CFrame.new(x, postHeight - 3, frontZ + 1.7) * CFrame.Angles(math.rad(90), 0, 0), Size = Vector3.new(0.9, 0.4, 4.5), Color = color, Material = Enum.Material.Neon, Parent = gate }):SetAttribute("Spin", 2)
 	end
 
 	-- Rotate 180 degrees so the board's Front face points out toward the aisle (+Z).
 	local board = makePart({
 		Name = "Board",
-		CFrame = plotCFrame * CFrame.new(0, postHeight + 2, frontZ) * CFrame.Angles(0, math.pi, 0),
-		Size = Vector3.new(30, 5, 1),
-		Color = color,
+		CFrame = plotCFrame * CFrame.new(0, postHeight + 1, frontZ) * CFrame.Angles(0, math.pi, 0),
+		Size = Vector3.new(34, 7, 1.2),
+		Color = Color3.fromRGB(20, 22, 30),
 		Material = Enum.Material.SmoothPlastic,
 		Parent = gate,
 	})
+	makePart({ Name = "BoardTrim", CFrame = board.CFrame * CFrame.new(0, -3.7, 0), Size = Vector3.new(34.4, 0.5, 1.4), Color = color, Material = Enum.Material.Neon, Parent = gate })
+	makePart({ Name = "BoardTrim", CFrame = board.CFrame * CFrame.new(0, 3.7, 0), Size = Vector3.new(34.4, 0.5, 1.4), Color = color, Material = Enum.Material.Neon, Parent = gate })
 
 	local surface = Instance.new("SurfaceGui")
 	surface.Face = Enum.NormalId.Front
 	surface.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	surface.PixelsPerStud = 40
+	surface.PixelsPerStud = 30
+	surface.LightInfluence = 0
 	surface.Parent = board
 
-	local label = Instance.new("TextLabel")
-	label.Name = "OwnerLabel"
-	label.Size = UDim2.fromScale(1, 1)
-	label.BackgroundTransparency = 1
-	label.Font = Enum.Font.FredokaOne
-	label.TextScaled = true
-	label.TextColor3 = Color3.new(1, 1, 1)
-	label.TextStrokeTransparency = 0.4
-	label.Text = PlotConfig.UnclaimedText
-	label.Parent = surface
+	makeLabel(surface, { Name = "Title", Size = UDim2.fromScale(1, 0.32), Font = Enum.Font.Michroma, TextColor3 = color, Text = "ROBOT FACTORY" })
+	local label = makeLabel(surface, { Name = "OwnerLabel", Position = UDim2.fromScale(0.03, 0.32), Size = UDim2.fromScale(0.94, 0.48), Font = Enum.Font.Sarpanch, Text = PlotConfig.UnclaimedText })
+	makeLabel(surface, { Name = "LikesLabel", Position = UDim2.fromScale(0, 0.8), Size = UDim2.fromScale(1, 0.2), Font = Enum.Font.GothamBold, TextColor3 = Color3.fromRGB(255, 220, 120), Text = "" })
 
 	return label
 end

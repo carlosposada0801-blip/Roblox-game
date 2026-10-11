@@ -77,7 +77,7 @@ function NotificationController:Start()
 	container = UIKit.create("Frame", {
 		Name = "Notifications",
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 120),
+		Position = UDim2.new(0.5, 0, 0, 176),
 		Size = UDim2.fromOffset(480, 220),
 		BackgroundTransparency = 1,
 		Parent = UIKit.root(),

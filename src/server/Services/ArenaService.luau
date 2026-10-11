@@ -8,6 +8,10 @@
 	    zaps the nearest enemy. More Prototypes = stronger zaps.
 	  * Getting the last hit on someone earns cash (x rebirth multiplier).
 	  * Dying, the exit portal, or the Leave button sends you home.
+	  * Rounds (ArenaConfig.Rounds): score points for knockouts and for standing
+	    on the glowing hill in the middle. The top scorer when the timer ends
+	    wins a trophy (data.ArenaWins) and cash.
+	    workspace attributes: ArenaRoundEndsAt, ArenaLeader. Player attribute: ArenaScore.
 ]]
 
 local Debris = game:GetService("Debris")
@@ -20,7 +24,7 @@ local ArenaConfig = require(Shared.Config.ArenaConfig)
 local RebirthConfig = require(Shared.Config.RebirthConfig)
 local Format = require(Shared.Util.Format)
 
-local DataService, EconomyService, PlotService, PlayerService, Net
+local DataService, EconomyService, PlotService, PlayerService, QuestService, Net
 
 local ArenaService = {}
 
@@ -102,7 +106,8 @@ local function buildArena()
 	for _, offset in ipairs({ Vector3.new(25, 0, 25), Vector3.new(-25, 0, 25), Vector3.new(25, 0, -25), Vector3.new(-25, 0, -25) }) do
 		part({ Name = "Cover", Size = Vector3.new(8, 10, 8), CFrame = CFrame.new(center + offset + Vector3.new(0, 5, 0)), Color = Color3.fromRGB(60, 64, 78), Material = Enum.Material.Metal }, folder)
 	end
-	part({ Name = "CenterPlatform", Size = Vector3.new(18, 2, 18), CFrame = CFrame.new(center + Vector3.new(0, 1, 0)), Color = Color3.fromRGB(150, 60, 255), Material = Enum.Material.Neon, Transparency = 0.3 }, folder)
+	local hill = part({ Name = "CenterPlatform", Size = Vector3.new(18, 2, 18), CFrame = CFrame.new(center + Vector3.new(0, 1, 0)), Color = Color3.fromRGB(150, 60, 255), Material = Enum.Material.Neon, Transparency = 0.3 }, folder)
+	addSign(hill, "👑 KING OF THE HILL 👑", Color3.fromRGB(255, 210, 80), 8)
 
 	-- Spawn ring
 	for index = 1, 8 do
@@ -172,6 +177,8 @@ local function onDied(victim)
 	local killer = hit.Attacker
 	local data = killer.Parent and DataService:GetData(killer)
 	if data then
+		ArenaService:AddScore(killer, ArenaConfig.Rounds.KnockoutPoints)
+		QuestService:Track(killer, "ArenaKnockouts", 1)
 		local reward = ArenaConfig.KillReward * RebirthConfig.GetMultiplier(data.Rebirths)
 		EconomyService:AddCash(killer, reward)
 		Net:Notify(killer, ("You beat %s! +%s"):format(victim.DisplayName, Format.cash(reward)), "success")
@@ -442,8 +449,86 @@ local function hookPortal(pad, onTouch)
 	end)
 end
 
+-- Rounds -----------------------------------------------------------------------
+
+local scores = {} -- [Player] = points this round
+
+function ArenaService:AddScore(player: Player, points: number)
+	scores[player] = (scores[player] or 0) + points
+	player:SetAttribute("ArenaScore", scores[player])
+
+	local leader, best = nil, 0
+	for p, score in pairs(scores) do
+		if p.Parent and score > best then
+			leader, best = p, score
+		end
+	end
+	workspace:SetAttribute("ArenaLeader", if leader then ("%s (%d)"):format(leader.DisplayName, best) else "")
+end
+
+local function endRound()
+	local fighters = 0
+	local winner, best = nil, 0
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player:GetAttribute("InArena") then
+			fighters += 1
+			local score = scores[player] or 0
+			if score > best then
+				winner, best = player, score
+			end
+		end
+	end
+
+	if winner and fighters >= ArenaConfig.Rounds.MinPlayers then
+		local data = DataService:GetData(winner)
+		if data then
+			data.ArenaWins += 1
+			local reward = ArenaConfig.Rounds.WinnerCash * RebirthConfig.GetMultiplier(data.Rebirths)
+			EconomyService:AddCash(winner, reward)
+			Net:NotifyAll(("🏆 %s won the arena round with %d points!"):format(winner.DisplayName, best), "special")
+			Net:Notify(winner, ("You won the round! +%s and a trophy 🏆"):format(Format.cash(reward)), "success")
+			Net:Fire(winner, "Sfx", "Rebirth")
+			Net:Fire(winner, "Fx", "Confetti")
+		end
+	elseif fighters > 0 then
+		Net:NotifyAll("⚔️ Arena round over. A new round is starting!", "info")
+	end
+
+	for player in pairs(scores) do
+		if player.Parent then
+			player:SetAttribute("ArenaScore", 0)
+		end
+	end
+	table.clear(scores)
+	workspace:SetAttribute("ArenaLeader", "")
+end
+
+local function runRounds()
+	local config = ArenaConfig.Rounds
+	local center = ArenaConfig.Center
+	while true do
+		workspace:SetAttribute("ArenaRoundEndsAt", workspace:GetServerTimeNow() + config.Length)
+		local roundEnd = os.clock() + config.Length
+		while os.clock() < roundEnd do
+			task.wait(1)
+			-- Hill points
+			for _, player in ipairs(Players:GetPlayers()) do
+				if isFighter(player) then
+					local position = player.Character.HumanoidRootPart.Position
+					local flat = Vector3.new(position.X - center.X, 0, position.Z - center.Z)
+					if flat.Magnitude <= config.HillRadius and math.abs(position.Y - center.Y) < 10 then
+						ArenaService:AddScore(player, config.HillPointsPerSecond)
+					end
+				end
+			end
+		end
+		endRound()
+	end
+end
+
 function ArenaService:Init(services)
 	DataService = services.DataService
+	QuestService = services.QuestService
 	EconomyService = services.EconomyService
 	PlotService = services.PlotService
 	PlayerService = services.PlayerService
@@ -476,6 +561,8 @@ function ArenaService:Start()
 		swordCooldowns[player] = nil
 		portalCooldowns[player] = nil
 	end)
+
+	task.spawn(runRounds)
 
 	local elapsed = 0
 	RunService.Heartbeat:Connect(function(dt)

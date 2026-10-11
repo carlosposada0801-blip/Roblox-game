@@ -10,7 +10,63 @@ local ServerStorage = game:GetService("ServerStorage")
 local ItemBuilder = {}
 
 -- Keys in a part definition that are handled here instead of set as properties
-local SPECIAL_KEYS = { CFrame = true, Light = true }
+local SPECIAL_KEYS = { CFrame = true, Light = true, Fire = true, Smoke = true, Sparkles = true, Emitter = true, Spin = true }
+
+-- Particle textures that ship with Roblox (no uploads needed)
+local TEXTURES = {
+	Sparks = "rbxasset://textures/particles/fire_sparks_main.dds",
+	Sparkle = "rbxasset://textures/particles/sparkles_main.dds",
+	Square = "rbxasset://textures/particles/SquareParticle.png",
+	Smoke = "rbxasset://textures/particles/smoke_main.dds",
+}
+
+local function addEffects(part, definition)
+	if definition.Fire then
+		local fire = Instance.new("Fire")
+		for key, value in pairs(definition.Fire) do
+			fire[key] = value
+		end
+		fire.Parent = part
+	end
+	if definition.Smoke then
+		local smoke = Instance.new("Smoke")
+		for key, value in pairs(definition.Smoke) do
+			smoke[key] = value
+		end
+		smoke.Parent = part
+	end
+	if definition.Sparkles then
+		local sparkles = Instance.new("Sparkles")
+		sparkles.SparkleColor = definition.Sparkles
+		sparkles.Parent = part
+	end
+	if definition.Emitter then
+		local config = definition.Emitter
+		local emitter = Instance.new("ParticleEmitter")
+		emitter.Texture = TEXTURES[config.Texture or "Sparkle"] or config.Texture
+		emitter.Rate = config.Rate or 10
+		emitter.Lifetime = NumberRange.new(config.Lifetime or 0.6, (config.Lifetime or 0.6) * 1.5)
+		emitter.Speed = NumberRange.new(config.Speed or 4, (config.Speed or 4) * 2)
+		emitter.SpreadAngle = Vector2.new(config.Spread or 40, config.Spread or 40)
+		emitter.Size = NumberSequence.new(config.Size or 0.4, 0)
+		emitter.LightEmission = config.LightEmission or 0.8
+		emitter.Acceleration = config.Acceleration or Vector3.new(0, -10, 0)
+		emitter.Rotation = NumberRange.new(0, 360)
+		emitter.RotSpeed = NumberRange.new(-180, 180)
+		if config.Colors then
+			local keypoints = {}
+			for index, color in ipairs(config.Colors) do
+				table.insert(keypoints, ColorSequenceKeypoint.new((index - 1) / math.max(1, #config.Colors - 1), color))
+			end
+			emitter.Color = ColorSequence.new(keypoints)
+		end
+		emitter.Parent = part
+	end
+	if definition.Spin then
+		-- Clients spin parts with this attribute (radians per second)
+		part:SetAttribute("Spin", definition.Spin)
+	end
+end
 
 local function buildPart(definition, plotCFrame)
 	local part = Instance.new("Part")
@@ -25,6 +81,7 @@ local function buildPart(definition, plotCFrame)
 	end
 
 	part.CFrame = plotCFrame * (definition.CFrame or CFrame.identity)
+	addEffects(part, definition)
 
 	if definition.Light then
 		local light = Instance.new("PointLight")

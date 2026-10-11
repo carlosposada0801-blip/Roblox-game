@@ -30,6 +30,17 @@ ArenaConfig.Prototype = {
 }
 
 ArenaConfig.KillReward = 500 -- cash, multiplied by the killer's rebirth multiplier
+
+-- Rounds: score points by knocking players out and by standing on the glowing hill
+-- in the middle. Highest score when the timer ends wins a trophy (ArenaWins) and cash.
+ArenaConfig.Rounds = {
+	Length = 180, -- seconds
+	HillRadius = 9,
+	HillPointsPerSecond = 1,
+	KnockoutPoints = 5,
+	MinPlayers = 2, -- fighters needed for the round winner to get a trophy
+	WinnerCash = 5000, -- x rebirth multiplier
+}
 ArenaConfig.KillCreditTime = 10 -- seconds a hit counts toward a kill
 
 return ArenaConfig

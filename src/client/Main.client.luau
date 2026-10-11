@@ -8,13 +8,18 @@ local Controllers = script.Parent:WaitForChild("Controllers")
 local CONTROLLER_ORDER = {
 	"NotificationController", -- first, so others can show toasts
 	"SoundController",
+	"EffectsController",
 	"HudController",
+	"EventController",
 	"ButtonController",
 	"MenuController",
 	"ArenaController",
 	"GuideController",
+	"PromptController",
+	"ArrowController",
+	"PetController",
+	"TradeController",
 	"EnvironmentController",
-	"WalkwayController",
 	"MusicController",
 }
 

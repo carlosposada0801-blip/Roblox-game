@@ -16,13 +16,22 @@ local SERVICE_ORDER = {
 	"DataService",
 	"PlotService",
 	"EconomyService",
+	"QuestService",
+	"EventService",
+	"PetService",
+	"RobotBookService",
 	"TycoonService",
+	"UpgradeService",
 	"WorkerService",
 	"ProductionService",
+	"LeaderboardService",
 	"RebirthService",
 	"MonetizationService",
 	"ArenaService",
 	"SettingsService",
+	"DailyService",
+	"SocialService",
+	"TradeService",
 	"PlayerService", -- keep last: it starts loading players
 }
 
