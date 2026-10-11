@@ -85,15 +85,16 @@ function GuideController:Start()
 	toggle = UIKit.button({
 		Name = "GuideToggle",
 		AnchorPoint = Vector2.new(0, 0.5),
-		Position = UDim2.new(0, 12, 0.5, 178),
-		Size = UDim2.fromOffset(92, 44),
+		Position = UDim2.new(0, 12, 0.5, 190),
+		Size = UDim2.fromOffset(48, 44),
 		Color = Theme.PanelLight,
 		Parent = UIKit.root(),
 	}, function()
 		Net.Fire("SetSetting", "GuideArrow", not isOn())
 	end)
 	local function updateToggle()
-		toggle.Text = if isOn() then "🧭 Guide ✓" else "🧭 Guide ✗"
+		toggle.Text = "🧭"
+		toggle:SetAttribute("BaseColor", if isOn() then Theme.Green else Theme.Disabled)
 		update()
 	end
 	player:GetAttributeChangedSignal("Setting_GuideArrow"):Connect(updateToggle)

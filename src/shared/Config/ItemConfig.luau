@@ -206,11 +206,72 @@ local function upperFloor()
 	return parts
 end
 
+-- Third floor (unlocked after more rebirths)
+local THIRD_Y = 34
+local LIFT_X, LIFT_Z = 32, -13
+
+local function reactor(x, z, y)
+	z, y = z or BELT_Z, y or 0
+	return {
+		{ Name = "ReactorCore", Size = Vector3.new(2.2, 2.2, 2.2), Shape = Enum.PartType.Ball, CFrame = at(x, y + 12.3, z), Color = Color3.fromRGB(60, 255, 120), Material = Enum.Material.Neon, CanCollide = false, Sparkles = Color3.fromRGB(150, 255, 180), Light = { Brightness = 4, Range = 18, Color = Color3.fromRGB(60, 255, 120) } },
+		{ Name = "ReactorRing", Size = Vector3.new(5.5, 0.3, 0.5), CFrame = at(x, y + 12.3, z), Color = Color3.fromRGB(200, 255, 220), Material = Enum.Material.Neon, CanCollide = false, Spin = 5 },
+		{ Name = "Plasma", Size = Vector3.new(1, 1, 1), CFrame = at(x, y + 7.3, z), Color = Color3.fromRGB(60, 255, 120), Material = Enum.Material.Neon, CanCollide = false, Emitter = { Texture = "Sparkle", Rate = 20, Lifetime = 0.6, Speed = 4, Size = 0.5, Colors = { Color3.fromRGB(60, 255, 120), Color3.fromRGB(0, 200, 255) } } },
+	}
+end
+
+local function liftPad(name, y, destinationY, label)
+	return {
+		Name = name,
+		Size = Vector3.new(5, 0.5, 5),
+		CFrame = at(LIFT_X, y + 0.25, LIFT_Z),
+		Color = Color3.fromRGB(60, 255, 120),
+		Material = Enum.Material.Neon,
+		CanCollide = false,
+		Sparkles = Color3.fromRGB(150, 255, 180),
+		-- Land a few studs away from the other floor's pad
+		Teleport = Vector3.new(LIFT_X, destinationY + 3, LIFT_Z - 7),
+		Sign = label,
+	}
+end
+
+local function thirdFloor()
+	local floorColor = Color3.fromRGB(44, 40, 60)
+	local accent = Color3.fromRGB(60, 255, 120)
+	local parts = {
+		{ Name = "ThirdFloor", Size = Vector3.new(100, 1, 42), CFrame = at(0, THIRD_Y - 0.5, -29), Color = floorColor, Material = Enum.Material.DiamondPlate },
+		{ Name = "ThirdEdge", Size = Vector3.new(100, 0.4, 0.6), CFrame = at(0, THIRD_Y - 0.6, -8), Color = accent, Material = Enum.Material.Neon },
+		-- Lifts between floor 2 and floor 3
+		liftPad("LiftUp", UPPER_Y, THIRD_Y, "⬆ 3RD FLOOR"),
+		liftPad("LiftDown", THIRD_Y, UPPER_Y, "⬇ 2ND FLOOR"),
+		{ Name = "LiftShaft", Size = Vector3.new(0.6, THIRD_Y - UPPER_Y, 0.6), CFrame = at(LIFT_X - 2.8, (UPPER_Y + THIRD_Y) / 2, LIFT_Z - 2.8), Color = accent, Material = Enum.Material.Neon, CanCollide = false },
+		{ Name = "LiftShaft", Size = Vector3.new(0.6, THIRD_Y - UPPER_Y, 0.6), CFrame = at(LIFT_X + 2.8, (UPPER_Y + THIRD_Y) / 2, LIFT_Z - 2.8), Color = accent, Material = Enum.Material.Neon, CanCollide = false },
+		-- Third-floor conveyor
+		{ Name = "Frame", Size = Vector3.new(UPPER_BELT_END - BELT_START, 1.5, 7), CFrame = at((BELT_START + UPPER_BELT_END) / 2, THIRD_Y + 0.75, UPPER_Z), Color = DARK_METAL, Material = Enum.Material.Metal },
+		{ Name = "Belt", Size = Vector3.new(UPPER_BELT_END - BELT_START, 0.2, 6), CFrame = at((BELT_START + UPPER_BELT_END) / 2, THIRD_Y + BELT_TOP - 0.1, UPPER_Z), Color = Color3.fromRGB(25, 25, 28), Material = Enum.Material.Fabric },
+		{ Name = "Rail", Size = Vector3.new(UPPER_BELT_END - BELT_START, 1, 0.5), CFrame = at((BELT_START + UPPER_BELT_END) / 2, THIRD_Y + BELT_TOP + 0.5, UPPER_Z - 3.25), Color = accent, Material = Enum.Material.Metal },
+		{ Name = "Rail", Size = Vector3.new(UPPER_BELT_END - BELT_START, 1, 0.5), CFrame = at((BELT_START + UPPER_BELT_END) / 2, THIRD_Y + BELT_TOP + 0.5, UPPER_Z + 3.25), Color = accent, Material = Enum.Material.Metal },
+		-- Third-floor collector
+		{ Name = "Base", Size = Vector3.new(7, 1, 9), CFrame = at(42.5, THIRD_Y + 0.5, UPPER_Z), Color = DARK_METAL, Material = Enum.Material.Metal },
+		{ Name = "Wall", Size = Vector3.new(1, 4, 9), CFrame = at(45.5, THIRD_Y + 3, UPPER_Z), Color = accent, Material = Enum.Material.Metal },
+		{ Name = "Intake", Size = Vector3.new(6, 3, 7), CFrame = at(42, THIRD_Y + 2.5, UPPER_Z), Color = accent, Material = Enum.Material.Neon, Transparency = 0.6, CanCollide = false, Sparkles = Color3.fromRGB(150, 255, 180) },
+		{ Name = "RailingTop", Size = Vector3.new(100, 0.4, 0.4), CFrame = at(0, THIRD_Y + 3, -8.6), Color = accent, Material = Enum.Material.Neon },
+	}
+	-- Ceiling lights for the second floor underneath
+	for _, x in ipairs({ -30, 0, 30 }) do
+		table.insert(parts, { Name = "CeilingLight", Size = Vector3.new(8, 0.3, 1), CFrame = at(x, THIRD_Y - 1.15, -22), Color = Color3.fromRGB(220, 255, 230), Material = Enum.Material.Neon, Light = { Brightness = 2, Range = 22, Color = Color3.fromRGB(220, 255, 230) } })
+	end
+	for x = -46, 46, 8 do
+		table.insert(parts, { Name = "Railing", Size = Vector3.new(0.4, 3, 0.4), CFrame = at(x, THIRD_Y + 1.5, -8.6), Color = STEEL, Material = Enum.Material.Metal })
+	end
+	return parts
+end
+
 -- Button rows (plot-local Z)
 local ROW_PRODUCTION = -8 -- buttons sit right in front of the item they build
 local ROW_CONVEYOR = 4
 local ROW_BUILDING = 16
 local ROW_EXPANSION = 26 -- second floor (needs rebirths)
+local ROW_THIRD = 36 -- third floor (needs more rebirths)
 
 -- Items ---------------------------------------------------------------------
 -- The order here is just for readability. Unlock order comes from Requires.
@@ -493,6 +554,67 @@ local Items = {
 		Button = Vector3.new(26, 0, ROW_EXPANSION),
 		Dropper = { Interval = 1.2, Value = 90, Stage = "Metal" },
 		Parts = dropper(-32, Color3.fromRGB(120, 60, 220), UPPER_Z, UPPER_Y),
+	},
+
+	-- Third floor (needs 5 rebirths) ----------------------------------------------
+	{
+		Id = "ThirdFloor",
+		DisplayName = "3rd Floor + Lift",
+		Category = "Floor",
+		Price = 2000000,
+		MinRebirths = 5,
+		Requires = { "QuantumDropper2" },
+		Button = Vector3.new(-18, 0, ROW_THIRD),
+		Label = true,
+		Conveyor = { SpeedMultiplier = 1 },
+		Collector = {},
+		Parts = thirdFloor(),
+	},
+	{
+		Id = "PlasmaDropper1",
+		DisplayName = "Plasma Dropper",
+		Category = "Dropper",
+		Price = 3000000,
+		MinRebirths = 5,
+		Requires = { "ThirdFloor" },
+		Button = Vector3.new(-10, 0, ROW_THIRD),
+		Dropper = { Interval = 1.5, Value = 400, Stage = "RobotPart" },
+		Parts = dropper(-42, Color3.fromRGB(40, 200, 110), UPPER_Z, THIRD_Y),
+	},
+	{
+		Id = "FusionReactor",
+		DisplayName = "Fusion Reactor",
+		Category = "Machine",
+		Price = 6000000,
+		MinRebirths = 5,
+		Requires = { "PlasmaDropper1" },
+		Button = Vector3.new(10, 0, ROW_THIRD),
+		Label = true,
+		Machine = { Accepts = { "RobotPart" }, Paint = true, Multiplier = 4 },
+		Parts = machine(-12, Color3.fromRGB(60, 255, 120), reactor(-12, UPPER_Z, THIRD_Y), UPPER_Z, THIRD_Y),
+	},
+	{
+		Id = "MegaAssembler",
+		DisplayName = "Mega Assembler",
+		Category = "Machine",
+		Price = 12000000,
+		MinRebirths = 5,
+		Requires = { "FusionReactor" },
+		Button = Vector3.new(18, 0, ROW_THIRD),
+		Label = true,
+		Machine = { Accepts = { "RobotPart" }, Output = "Robot", Multiplier = 4, PartsPerRobot = 2 },
+		Parts = machine(20, Color3.fromRGB(255, 215, 0), assemblyRig(20, UPPER_Z, THIRD_Y), UPPER_Z, THIRD_Y),
+	},
+	{
+		Id = "PlasmaDropper2",
+		DisplayName = "Plasma Dropper II",
+		Category = "Dropper",
+		Price = 20000000,
+		MinRebirths = 5,
+		Requires = { "MegaAssembler" },
+		Button = Vector3.new(26, 0, ROW_THIRD),
+		Dropper = { Interval = 1.2, Value = 600, Stage = "RobotPart" },
+		Parts = dropper(-32, Color3.fromRGB(40, 200, 110), UPPER_Z, THIRD_Y),
 	},
 
 	-- Game pass items (no button; built automatically for pass owners) -----------

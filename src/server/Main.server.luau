@@ -28,6 +28,7 @@ local SERVICE_ORDER = {
 	"RebirthService",
 	"MonetizationService",
 	"ArenaService",
+	"CombatService",
 	"SettingsService",
 	"DailyService",
 	"SocialService",

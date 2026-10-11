@@ -25,6 +25,14 @@ return {
 			Color = Color3.fromRGB(0, 220, 255),
 			Pets = { { Pet = "Spark", Weight = 40 }, { Pet = "Nova", Weight = 30 }, { Pet = "Pulse", Weight = 20 }, { Pet = "Omega", Weight = 9 }, { Pet = "Celestia", Weight = 1 } },
 		},
+		{
+			Id = "GalaxyEgg",
+			DisplayName = "Galaxy Egg",
+			Icon = "🌌",
+			Price = 2500000,
+			Color = Color3.fromRGB(150, 70, 255),
+			Pets = { { Pet = "Nova", Weight = 35 }, { Pet = "Pulse", Weight = 30 }, { Pet = "Omega", Weight = 22 }, { Pet = "Celestia", Weight = 10 }, { Pet = "Quasar", Weight = 3 } },
+		},
 	},
 
 	Pets = {
@@ -35,6 +43,7 @@ return {
 		Pulse = { DisplayName = "Pulse", Rarity = "Epic", Bonus = 0.5, Color = Color3.fromRGB(255, 80, 180) },
 		Omega = { DisplayName = "Omega", Rarity = "Legendary", Bonus = 1, Color = Color3.fromRGB(255, 200, 40) },
 		Celestia = { DisplayName = "Celestia", Rarity = "Mythic", Bonus = 2, Color = Color3.fromRGB(255, 255, 255) },
+		Quasar = { DisplayName = "Quasar", Rarity = "Mythic", Bonus = 3.5, Color = Color3.fromRGB(120, 40, 255) },
 	},
 
 	RarityColors = {

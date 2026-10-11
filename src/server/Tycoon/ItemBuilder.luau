@@ -5,12 +5,55 @@
 	from the entry's Parts list.
 ]]
 
+local Players = game:GetService("Players")
 local ServerStorage = game:GetService("ServerStorage")
 
 local ItemBuilder = {}
 
 -- Keys in a part definition that are handled here instead of set as properties
-local SPECIAL_KEYS = { CFrame = true, Light = true, Fire = true, Smoke = true, Sparkles = true, Emitter = true, Spin = true }
+local SPECIAL_KEYS = {
+	CFrame = true,
+	Light = true,
+	Fire = true,
+	Smoke = true,
+	Sparkles = true,
+	Emitter = true,
+	Spin = true,
+	Teleport = true, -- plot-local position: touching this part moves you there (floor lifts)
+	Sign = true, -- text floating above the part
+}
+
+-- Lift pads: anyone touching the part is moved to the destination
+local function hookTeleport(part, destination)
+	local last = {}
+	part.Touched:Connect(function(hit)
+		local character = hit:FindFirstAncestorOfClass("Model")
+		local player = character and Players:GetPlayerFromCharacter(character)
+		if not player or os.clock() - (last[player] or 0) < 1.5 then
+			return
+		end
+		last[player] = os.clock()
+		character:PivotTo(destination)
+	end)
+end
+
+local function addSign(part, text)
+	local billboard = Instance.new("BillboardGui")
+	billboard.Name = "Sign"
+	billboard.Size = UDim2.fromOffset(160, 34)
+	billboard.StudsOffset = Vector3.new(0, 3, 0)
+	billboard.MaxDistance = 80
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.fromScale(1, 1)
+	label.BackgroundTransparency = 1
+	label.Font = Enum.Font.Sarpanch
+	label.TextScaled = true
+	label.TextColor3 = Color3.fromRGB(120, 255, 160)
+	label.TextStrokeTransparency = 0.2
+	label.Text = text
+	label.Parent = billboard
+	billboard.Parent = part
+end
 
 -- Particle textures that ship with Roblox (no uploads needed)
 local TEXTURES = {
@@ -142,6 +185,12 @@ function ItemBuilder.build(item, plot)
 		for _, definition in ipairs(item.Parts or {}) do
 			local part = buildPart(definition, plot.CFrame)
 			part.Parent = model
+			if definition.Teleport then
+				hookTeleport(part, plot.CFrame * CFrame.new(definition.Teleport))
+			end
+			if definition.Sign then
+				addSign(part, definition.Sign)
+			end
 			if not model.PrimaryPart then
 				model.PrimaryPart = part
 			end

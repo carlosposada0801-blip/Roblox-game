@@ -32,4 +32,7 @@ return {
 	"TradeOffer", -- (robots, prototypes)
 	"TradeReady", -- (ready)
 	"TradeCancel", -- ()
+	"BuyWeapon", -- (weaponId)
+	"SetPvP", -- (on)
+	"FireWeapon", -- (weaponId, targetPosition) ranged weapons
 }

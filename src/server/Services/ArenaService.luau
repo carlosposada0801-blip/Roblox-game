@@ -24,13 +24,11 @@ local ArenaConfig = require(Shared.Config.ArenaConfig)
 local RebirthConfig = require(Shared.Config.RebirthConfig)
 local Format = require(Shared.Util.Format)
 
-local DataService, EconomyService, PlotService, PlayerService, QuestService, Net
+local DataService, EconomyService, PlotService, PlayerService, CombatService, Net
 
 local ArenaService = {}
 
 local spawnPoints = {}
-local lastHit = {} -- [victim Player] = { Attacker = Player, Time = number }
-local swordCooldowns = {} -- [Player] = os.clock()
 local portalCooldowns = {} -- [Player] = os.clock()
 local companions = {} -- [Player] = { Model, CFrame, LastAttack }
 
@@ -148,6 +146,7 @@ local function buildArena()
 end
 
 -- Combat ---------------------------------------------------------------------
+-- Weapons, damage and kill rewards live in CombatService.
 
 local function isFighter(player)
 	if not player or not player:GetAttribute("InArena") then
@@ -159,86 +158,7 @@ local function isFighter(player)
 end
 
 local function damage(attacker, victim, amount)
-	if attacker == victim or not (isFighter(attacker) and isFighter(victim)) then
-		return
-	end
-	local humanoid = victim.Character:FindFirstChildOfClass("Humanoid")
-	lastHit[victim] = { Attacker = attacker, Time = os.clock() }
-	humanoid:TakeDamage(amount) -- does nothing while the victim has a ForceField
-end
-
-local function onDied(victim)
-	local hit = lastHit[victim]
-	lastHit[victim] = nil
-	if not hit or os.clock() - hit.Time > ArenaConfig.KillCreditTime then
-		return
-	end
-
-	local killer = hit.Attacker
-	local data = killer.Parent and DataService:GetData(killer)
-	if data then
-		ArenaService:AddScore(killer, ArenaConfig.Rounds.KnockoutPoints)
-		QuestService:Track(killer, "ArenaKnockouts", 1)
-		local reward = ArenaConfig.KillReward * RebirthConfig.GetMultiplier(data.Rebirths)
-		EconomyService:AddCash(killer, reward)
-		Net:Notify(killer, ("You beat %s! +%s"):format(victim.DisplayName, Format.cash(reward)), "success")
-		Net:Fire(killer, "CashPopup", math.floor(reward))
-	end
-	Net:Notify(victim, ("%s got you! Back to your factory."):format(killer.DisplayName), "error")
-end
-
-local function makeSword()
-	local tool = Instance.new("Tool")
-	tool.Name = "Robo Sword"
-	tool.ToolTip = "Click to swing"
-	tool.CanBeDropped = false
-	-- Same grip as the classic Roblox sword
-	tool.GripPos = Vector3.new(0, 0, -1.5)
-	tool.GripForward = Vector3.new(-1, 0, 0)
-	tool.GripRight = Vector3.new(0, 1, 0)
-	tool.GripUp = Vector3.new(0, 0, 1)
-
-	local handle = Instance.new("Part")
-	handle.Name = "Handle"
-	handle.Size = Vector3.new(1, 0.8, 4)
-	handle.Color = Color3.fromRGB(0, 220, 255)
-	handle.Material = Enum.Material.Neon
-	handle.CanCollide = false
-	handle.Massless = true
-	handle.Parent = tool
-
-	tool.Activated:Connect(function()
-		local character = tool.Parent
-		local player = Players:GetPlayerFromCharacter(character)
-		if not isFighter(player) then
-			return
-		end
-
-		local now = os.clock()
-		if now - (swordCooldowns[player] or 0) < ArenaConfig.Sword.Cooldown then
-			return
-		end
-		swordCooldowns[player] = now
-
-		-- Plays the default slash animation
-		local anim = Instance.new("StringValue")
-		anim.Name = "toolanim"
-		anim.Value = "Slash"
-		anim.Parent = tool
-		Debris:AddItem(anim, 1)
-
-		local root = character.HumanoidRootPart
-		for _, other in ipairs(Players:GetPlayers()) do
-			if other ~= player and isFighter(other) then
-				local offset = other.Character.HumanoidRootPart.Position - root.Position
-				if offset.Magnitude <= ArenaConfig.Sword.Range and offset.Magnitude > 0 and root.CFrame.LookVector:Dot(offset.Unit) > 0.2 then
-					damage(player, other, ArenaConfig.Sword.Damage)
-				end
-			end
-		end
-	end)
-
-	return tool
+	CombatService:Damage(attacker, victim, amount)
 end
 
 -- Prototype companions -------------------------------------------------------
@@ -345,18 +265,6 @@ end
 
 -- Entering and leaving -------------------------------------------------------
 
-local function removeSwords(player)
-	for _, container in ipairs({ player:FindFirstChildOfClass("Backpack"), player.Character }) do
-		if container then
-			for _, child in ipairs(container:GetChildren()) do
-				if child:IsA("Tool") and child.Name == "Robo Sword" then
-					child:Destroy()
-				end
-			end
-		end
-	end
-end
-
 function ArenaService:Enter(player: Player)
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
@@ -378,20 +286,11 @@ function ArenaService:Enter(player: Player)
 	forceField.Parent = character
 	Debris:AddItem(forceField, ArenaConfig.SpawnProtection)
 
-	removeSwords(player)
-	makeSword().Parent = player:FindFirstChildOfClass("Backpack")
-
-	humanoid.Died:Once(function()
-		if player:GetAttribute("InArena") then
-			onDied(player)
-		end
-	end)
-
 	local data = DataService:GetData(player)
 	if data and data.Prototypes > 0 then
 		Net:Notify(player, "Welcome to the arena! Deploy your Prototype from the bottom of the screen.", "special")
 	else
-		Net:Notify(player, "Welcome to the arena! Click to swing your Robo Sword.", "info")
+		Net:Notify(player, "Welcome to the arena! Pick a weapon from your hotbar. Unlock more in the Armory!", "info")
 	end
 end
 
@@ -401,8 +300,6 @@ function ArenaService:Leave(player: Player)
 	end
 	player:SetAttribute("InArena", false)
 	removeCompanion(player)
-	removeSwords(player)
-	lastHit[player] = nil
 	task.spawn(PlotService.TeleportToPlot, PlotService, player)
 end
 
@@ -528,8 +425,8 @@ end
 
 function ArenaService:Init(services)
 	DataService = services.DataService
-	QuestService = services.QuestService
 	EconomyService = services.EconomyService
+	CombatService = services.CombatService
 	PlotService = services.PlotService
 	PlayerService = services.PlayerService
 	Net = services.Net
@@ -557,8 +454,6 @@ function ArenaService:Start()
 
 	Players.PlayerRemoving:Connect(function(player)
 		removeCompanion(player)
-		lastHit[player] = nil
-		swordCooldowns[player] = nil
 		portalCooldowns[player] = nil
 	end)
 

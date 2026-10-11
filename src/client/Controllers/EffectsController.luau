@@ -107,7 +107,7 @@ local function shake(duration, strength)
 	end)
 end
 
-local function onFx(kind, position)
+local function onFx(kind, position, ...)
 	if kind == "Confetti" then
 		if typeof(position) == "Vector3" then
 			burst(position, CONFETTI_COLORS, 70, "rbxasset://textures/particles/SquareParticle.png", 18)
@@ -118,6 +118,26 @@ local function onFx(kind, position)
 		burst(position + Vector3.new(0, 1, 0), { Color3.fromRGB(255, 220, 60), Color3.fromRGB(255, 170, 20) }, 30, "rbxasset://textures/particles/sparkles_main.dds", 12)
 	elseif kind == "Upgrade" and typeof(position) == "Vector3" then
 		burst(position, { Color3.fromRGB(0, 230, 255), Color3.fromRGB(255, 255, 255) }, 50, "rbxasset://textures/particles/sparkles_main.dds", 14)
+	elseif kind == "Shot" and typeof(position) == "Vector3" then
+		local target, color = ...
+		if typeof(target) ~= "Vector3" then
+			return
+		end
+		local distance = (target - position).Magnitude
+		local beam = Instance.new("Part")
+		beam.Anchored = true
+		beam.CanCollide = false
+		beam.CanQuery = false
+		beam.CanTouch = false
+		beam.CastShadow = false
+		beam.Material = Enum.Material.Neon
+		beam.Color = if typeof(color) == "Color3" then color else Color3.new(1, 0.2, 0.2)
+		beam.Size = Vector3.new(0.25, 0.25, distance)
+		beam.CFrame = CFrame.lookAt(position, target) * CFrame.new(0, 0, -distance / 2)
+		beam.Parent = workspace
+		TweenService:Create(beam, TweenInfo.new(0.15), { Transparency = 1 }):Play()
+		Debris:AddItem(beam, 0.2)
+		burst(target, { beam.Color, Color3.new(1, 1, 1) }, 8, "rbxasset://textures/particles/sparkles_main.dds", 6)
 	elseif kind == "Rebirth" then
 		flash()
 		shake(0.8, 1.5)

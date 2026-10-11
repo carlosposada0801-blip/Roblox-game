@@ -81,6 +81,9 @@ then Studio → Plugins → Rojo → Connect. `rojo build -o RobotFactoryTycoon.
 | ⚔️ Arena rounds | 3-minute rounds: knockouts and holding the center hill score points; winner gets a trophy and cash | `ArenaConfig.Rounds` |
 | 🏗️ 2nd floor | After **2 rebirths**: a second floor with a ramp, Quantum Droppers, Laser Cutter and AI Core | `ItemConfig` (`MinRebirths`) |
 | 🤝 Trading | Players menu → Trade: swap robots and Prototypes. Both press Ready, then a 5 s countdown; any change cancels | `TradeConfig` |
+| 🏢 3rd floor | After **5 rebirths**: lift pads from the 2nd floor, Plasma Droppers, Fusion Reactor and Mega Assembler | `ItemConfig` |
+| ⚔️ Weapons and PvP | Unlock weapons in the **Armory**: Robo Sword, Laser Blaster, Plasma Hammer, Shock Rifle, Rocket Launcher, and the Prototype Cannon (free with a Prototype). They work in the arena, or anywhere when both players switch **PvP on**. Hits are checked by the server | `WeaponConfig` |
+| 🌌 Galaxy Egg | A third, pricier egg ($2.5M) with the Mythic **Quasar** pet (+350% cash) | `PetConfig` |
 | 🎨 Look and feel | Hazard-striped plots, industrial gates with spinning gears, machine fire/sparks/paint effects, moving belt arrows, factory skyline with smokestacks, robot mascots, hologram title, sci-fi UI, confetti, screen flash on rebirth | `SceneryConfig`, `ItemConfig` |
 
 ---
@@ -239,7 +242,7 @@ loop handles all plots.
 | `/prototype` | The next robot built is a Prototype |
 | `/pass DoubleCash` | Grant a pass (`DoubleCash`, `AutoCollect`, `FasterConveyors`, `VIPFloor`) |
 | `/buy SmallCash` | Run a product through the receipt code (`SmallCash`, `MediumCash`, `LargeCash`, `NextUpgrade`, `Prototype`) |
-| `/rebirths 2` | Set your rebirths (2 unlocks the 2nd floor) |
+| `/rebirths 2` | Set your rebirths (2 unlocks the 2nd floor, 5 unlocks the 3rd) |
 | `/event GoldenRush` | Start an event (`GoldenRush`, `PowerSurge`, `CashFrenzy`, `RobotParade`) |
 | `/pet Omega` | Get a pet (`Bolt`, `Gear`, `Spark`, `Nova`, `Pulse`, `Omega`, `Celestia`) |
 | `/daily` | Make today's daily reward claimable again |

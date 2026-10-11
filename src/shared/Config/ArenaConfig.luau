@@ -1,7 +1,7 @@
 --[[
 	ArenaConfig
 	The shared PvP arena. It floats above the map. Step on the portal in the
-	lobby to enter. Everyone gets a Robo Sword; Prototype owners can deploy
+	lobby to enter. Your unlocked weapons (WeaponConfig) appear in your hotbar; Prototype owners can deploy
 	their Prototype robot, which follows them and zaps nearby enemies.
 ]]
 
@@ -14,11 +14,7 @@ ArenaConfig.LobbyPortal = Vector3.new(0, 0, -20) -- world position of the entry 
 
 ArenaConfig.SpawnProtection = 3 -- seconds of force field after entering
 
-ArenaConfig.Sword = {
-	Damage = 20,
-	Range = 8,
-	Cooldown = 0.6,
-}
+-- Weapons are in WeaponConfig
 
 ArenaConfig.Prototype = {
 	Damage = 12, -- per zap

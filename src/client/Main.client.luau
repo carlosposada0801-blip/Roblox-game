@@ -19,6 +19,7 @@ local CONTROLLER_ORDER = {
 	"ArrowController",
 	"PetController",
 	"TradeController",
+	"WeaponController",
 	"EnvironmentController",
 	"MusicController",
 }

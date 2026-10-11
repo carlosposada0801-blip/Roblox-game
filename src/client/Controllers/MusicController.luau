@@ -87,14 +87,15 @@ function MusicController:Start()
 	button = UIKit.button({
 		Name = "MusicToggle",
 		AnchorPoint = Vector2.new(0, 0.5),
-		Position = UDim2.new(0, 12, 0.5, 230),
-		Size = UDim2.fromOffset(92, 44),
-		Color = Theme.PanelLight,
-		Text = "🔊 Music",
+		Position = UDim2.new(0, 66, 0.5, 190),
+		Size = UDim2.fromOffset(48, 44),
+		Color = Theme.Green,
+		Text = "🔊",
 		Parent = UIKit.root(),
 	}, function()
 		muted = not muted
-		button.Text = if muted then "🔇 Music" else "🔊 Music"
+		button.Text = if muted then "🔇" else "🔊"
+		button:SetAttribute("BaseColor", if muted then Theme.Disabled else Theme.Green)
 		if current then
 			fade(current, if muted then 0 else Music.Volume)
 		end

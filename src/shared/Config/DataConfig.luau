@@ -34,6 +34,8 @@ DataConfig.Template = {
 	Prototypes = 0, -- Prototype robots owned (arena)
 	ProcessedReceipts = {}, -- [purchaseId] = os.time(), stops double grants
 	ArenaWins = 0,
+	Kills = 0, -- PvP knockouts anywhere
+	Weapons = { RoboSword = true }, -- [weaponId] = true when unlocked
 	Likes = 0, -- likes other players gave your factory
 	LikesGiven = { Day = 0, Ids = {} }, -- who you've liked today
 	Levels = {}, -- [itemId] = upgrade level (reset on rebirth)

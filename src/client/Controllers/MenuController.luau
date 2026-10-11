@@ -23,6 +23,7 @@ local MENU = {
 	{ Name = "Book", Icon = "📖", Color = Theme.Cyan, Panel = "BookPanel" },
 	{ Name = "Players", Icon = "👥", Color = Color3.fromRGB(60, 120, 255), Panel = "PlayersPanel" },
 	{ Name = "Daily", Icon = "🎁", Color = Theme.Pink, Panel = "DailyPanel", Badge = "Daily" },
+	{ Name = "Armory", Icon = "⚔️", Color = Theme.Red, Panel = "ArmoryPanel" },
 }
 
 local MenuController = {}
@@ -89,8 +90,8 @@ function MenuController:Start()
 	local bar = UIKit.create("Frame", {
 		Name = "Menu",
 		AnchorPoint = Vector2.new(0, 0.5),
-		Position = UDim2.new(0, 12, 0.5, -10),
-		Size = UDim2.fromOffset(156, 300),
+		Position = UDim2.new(0, 12, 0.5, -24),
+		Size = UDim2.fromOffset(156, 362),
 		BackgroundTransparency = 1,
 		Parent = root,
 	}, {
