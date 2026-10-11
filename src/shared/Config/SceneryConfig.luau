@@ -70,9 +70,13 @@ SceneryConfig.ColorCorrection = {
 -- World ----------------------------------------------------------------------
 
 SceneryConfig.World = {
-	GroundSize = 2000, -- terrain grass square, centered on the map
-	-- Half-size (X, Z) of the flat area kept clear around the plots and lobby
-	ClearZone = Vector2.new(230, 190),
+	GroundSize = 2048, -- terrain grass square, centered on the map (multiple of 4)
+	-- Half-size (X, Z) of the flat area around the plots and lobby. This area is a solid
+	-- grass platform (a part, top at y = 0) with NO terrain, so terrain can never cover
+	-- the plots. The terrain scenery around it sits a little lower (TerrainHeight).
+	ClearZone = Vector2.new(232, 192),
+	TerrainHeight = -4,
+	PlatformColor = Color3.fromRGB(92, 152, 74),
 
 	Mountains = { Count = 36, MinDistance = 580, MaxDistance = 820, MinRadius = 90, MaxRadius = 180 },
 	Hills = { Count = 50, MaxDistance = 520, MinRadius = 22, MaxRadius = 55 },

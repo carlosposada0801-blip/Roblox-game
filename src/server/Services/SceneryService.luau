@@ -22,6 +22,7 @@ local SceneryConfig = require(ReplicatedStorage:WaitForChild("Shared").Config.Sc
 
 local World = SceneryConfig.World
 local Terrain = workspace.Terrain
+local GROUND_Y = World.TerrainHeight -- terrain surface height outside the platform
 
 local SceneryService = {}
 
@@ -114,18 +115,38 @@ end
 
 -- Terrain --------------------------------------------------------------------
 
--- Flat grass ground with its top at y = 0, filled in tiles so we can yield between them
+-- The plots and lobby stand on a solid part, not terrain, so they can't be buried.
+local function buildPlatform(folder)
+	local clear = World.ClearZone
+	part({
+		Name = "Platform",
+		Size = Vector3.new(clear.X * 2, 12, clear.Y * 2),
+		CFrame = CFrame.new(0, -6, 0), -- top at y = 0
+		Color = World.PlatformColor,
+		Material = Enum.Material.Grass,
+	}, folder)
+end
+
+-- Grass terrain around the platform, filled in tiles so we can yield between them
 local function buildGround()
 	Terrain:Clear()
 
 	local size = World.GroundSize
-	local tile = 250
+	local tile = 256
 	for x = -size / 2, size / 2 - tile, tile do
 		for z = -size / 2, size / 2 - tile, tile do
-			Terrain:FillBlock(CFrame.new(x + tile / 2, -6, z + tile / 2), Vector3.new(tile, 12, tile), Enum.Material.Grass)
+			Terrain:FillBlock(
+				CFrame.new(x + tile / 2, GROUND_Y - 6, z + tile / 2),
+				Vector3.new(tile, 12, tile),
+				Enum.Material.Grass
+			)
 			task.wait()
 		end
 	end
+
+	-- Keep the platform area completely free of terrain
+	local clear = World.ClearZone
+	Terrain:FillBlock(CFrame.new(0, 0, 0), Vector3.new(clear.X * 2, 48, clear.Y * 2), Enum.Material.Air)
 end
 
 local function buildTerrain()
@@ -134,12 +155,12 @@ local function buildTerrain()
 	for _, lake in ipairs(World.Lakes) do
 		local depth = lake.Size.Y
 		Terrain:FillBlock(
-			CFrame.new(lake.Center + Vector3.new(0, -2, 0)),
+			CFrame.new(lake.Center + Vector3.new(0, GROUND_Y - 2, 0)),
 			Vector3.new(lake.Size.X + 20, 4, lake.Size.Z + 20),
 			Enum.Material.Sand
 		)
 		Terrain:FillBlock(
-			CFrame.new(lake.Center + Vector3.new(0, -depth / 2, 0)),
+			CFrame.new(lake.Center + Vector3.new(0, GROUND_Y - depth / 2, 0)),
 			Vector3.new(lake.Size.X, depth, lake.Size.Z),
 			Enum.Material.Water
 		)
@@ -157,7 +178,7 @@ local function buildTerrain()
 		local radius = rng:NextNumber(hills.MinRadius, hills.MaxRadius)
 		local x, z = randomOpenPoint(hills.MaxDistance, radius)
 		if x then
-			Terrain:FillBall(Vector3.new(x, -radius * 0.55, z), radius, Enum.Material.Grass)
+			Terrain:FillBall(Vector3.new(x, GROUND_Y - radius * 0.55, z), radius, Enum.Material.Grass)
 			task.wait()
 		end
 	end
@@ -168,7 +189,7 @@ local function buildTerrain()
 		local angle = (index / mountains.Count) * math.pi * 2 + rng:NextNumber(-0.08, 0.08)
 		local distance = rng:NextNumber(mountains.MinDistance, mountains.MaxDistance)
 		local radius = rng:NextNumber(mountains.MinRadius, mountains.MaxRadius)
-		local center = Vector3.new(math.cos(angle) * distance, -radius * 0.3, math.sin(angle) * distance)
+		local center = Vector3.new(math.cos(angle) * distance, GROUND_Y - radius * 0.3, math.sin(angle) * distance)
 
 		-- Later fills replace earlier ones: dirt skirt, then rock body, then snow cap
 		Terrain:FillBall(center + Vector3.new(0, -radius * 0.5, 0), radius * 1.15, Enum.Material.Ground)
@@ -191,6 +212,7 @@ local LEAF_COLORS = {
 }
 
 local function buildTree(parent, x, z)
+	local baseY = GROUND_Y - 0.5
 	local model = Instance.new("Model")
 	model.Name = "Tree"
 	local scale = rng:NextNumber(0.8, 1.6)
@@ -201,7 +223,7 @@ local function buildTree(parent, x, z)
 		Name = "Trunk",
 		Shape = Enum.PartType.Cylinder,
 		Size = Vector3.new(trunkHeight, 1.6 * scale, 1.6 * scale),
-		CFrame = CFrame.new(x, trunkHeight / 2, z) * CFrame.Angles(0, 0, math.rad(90)),
+		CFrame = CFrame.new(x, baseY + trunkHeight / 2, z) * CFrame.Angles(0, 0, math.rad(90)),
 		Color = Color3.fromRGB(105, 70, 45),
 		Material = Enum.Material.Wood,
 	}, model)
@@ -213,7 +235,7 @@ local function buildTree(parent, x, z)
 			part({
 				Name = "Leaves",
 				Size = Vector3.new(width, 3 * scale, width),
-				CFrame = CFrame.new(x, trunkHeight * 0.55 + layer * 3 * scale, z) * CFrame.Angles(0, math.rad(45 * layer), 0),
+				CFrame = CFrame.new(x, baseY + trunkHeight * 0.55 + layer * 3 * scale, z) * CFrame.Angles(0, math.rad(45 * layer), 0),
 				Color = Color3.fromRGB(40, 110, 60),
 				Material = Enum.Material.Grass,
 				CanCollide = false,
@@ -229,7 +251,7 @@ local function buildTree(parent, x, z)
 				Size = Vector3.new(size, size, size),
 				CFrame = CFrame.new(
 					x + rng:NextNumber(-2, 2) * scale,
-					trunkHeight + rng:NextNumber(-1, 2) * scale,
+					baseY + trunkHeight + rng:NextNumber(-1, 2) * scale,
 					z + rng:NextNumber(-2, 2) * scale
 				),
 				Color = color,
@@ -266,7 +288,7 @@ local function buildProps(folder)
 			part({
 				Name = "Rock",
 				Size = size,
-				CFrame = CFrame.new(x, size.Y * 0.3, z)
+				CFrame = CFrame.new(x, GROUND_Y + size.Y * 0.3, z)
 					* CFrame.Angles(rng:NextNumber(-0.3, 0.3), rng:NextNumber(0, math.pi * 2), rng:NextNumber(-0.3, 0.3)),
 				Color = Color3.fromRGB(rng:NextInteger(110, 140), rng:NextInteger(110, 135), rng:NextInteger(115, 140)),
 				Material = Enum.Material.Rock,
@@ -364,8 +386,15 @@ function SceneryService:Init()
 	folder.Name = "Scenery"
 	folder.Parent = workspace
 
+	-- The Studio Baseplate template's plate is replaced by our platform
+	local baseplate = workspace:FindFirstChild("Baseplate")
+	if baseplate then
+		baseplate:Destroy()
+	end
+
 	-- Quick parts first, so the lobby works right away
 	setupLighting()
+	buildPlatform(folder)
 	buildPlaza(folder)
 	buildWalkway(folder)
 
@@ -373,13 +402,6 @@ function SceneryService:Init()
 	task.spawn(function()
 		local started = os.clock()
 		buildGround()
-
-		-- The Studio Baseplate template's plate would cover the terrain
-		local baseplate = workspace:FindFirstChild("Baseplate")
-		if baseplate then
-			baseplate:Destroy()
-		end
-
 		buildTerrain()
 		buildProps(folder)
 		print(("[SceneryService] World built in %.1fs"):format(os.clock() - started))
