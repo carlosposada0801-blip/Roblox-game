@@ -17,7 +17,8 @@ local player = Players.LocalPlayer
 local GuideController = {}
 
 local function isOn()
-	return player:GetAttribute("Setting_GuideArrow") ~= false
+	-- Off in Settings, or hidden while the tutorial shows its own arrow
+	return player:GetAttribute("Setting_GuideArrow") ~= false and player:GetAttribute("TutorialActive") ~= true
 end
 
 function GuideController:Start()
@@ -98,6 +99,7 @@ function GuideController:Start()
 		update()
 	end
 	player:GetAttributeChangedSignal("Setting_GuideArrow"):Connect(updateToggle)
+	player:GetAttributeChangedSignal("TutorialActive"):Connect(updateToggle)
 	updateToggle()
 
 	buttons.ChildAdded:Connect(function(button)

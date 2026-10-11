@@ -1,18 +1,22 @@
 --[[
 	WorkerService
-	Spend robots (built by your factory) to hire worker bots. Each bot stands
-	on your plot and gives a permanent boost defined in WorkerConfig.
+	Assign robots (built by your factory) to worker slots. Each bot lives on
+	your plot, walks to the machine it helps (clients animate it), and gives a
+	permanent boost defined in WorkerConfig: faster droppers, more machine
+	value, or auto-collecting part of your pad cash. More slots unlock with
+	rebirths (WorkerConfig.SlotRebirths).
 
 	Saved as data.Workers = { [workerId] = count }.
-	Mirrored to the client as attributes Worker_<id> = count.
+	Mirrored to the client as attributes Worker_<id> = count, WorkerSlots_<id> = max.
 ]]
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local WorkerConfig = require(Shared.Config.WorkerConfig)
 
-local DataService, EconomyService, PlotService, PlayerService, QuestService, Net
+local DataService, EconomyService, PlotService, PlayerService, QuestService, TycoonService, Net
 
 local WorkerService = {}
 
@@ -25,7 +29,7 @@ local function getCount(data, workerId)
 	return tonumber(data.Workers[workerId]) or 0
 end
 
-local function buildBot(worker, slotCFrame)
+local function buildBot(worker, slotCFrame, workTarget)
 	local model = Instance.new("Model")
 	model.Name = worker.Id
 
@@ -53,6 +57,10 @@ local function buildBot(worker, slotCFrame)
 	part("Antenna", Vector3.new(0.2, 0.8, 0.2), CFrame.new(0, 4.8, 0), steel)
 	part("AntennaTip", Vector3.new(0.4, 0.4, 0.4), CFrame.new(0, 5.3, 0), worker.Color, Enum.Material.Neon)
 	model.PrimaryPart = body
+	-- Clients walk the bot here and back (EffectsController)
+	if workTarget then
+		model:SetAttribute("WorkTarget", workTarget)
+	end
 
 	local billboard = Instance.new("BillboardGui")
 	billboard.Size = UDim2.fromOffset(110, 24)
@@ -85,11 +93,20 @@ local function renderWorkers(player)
 
 	for _, worker in ipairs(WorkerConfig.Workers) do
 		local count = math.min(getCount(data, worker.Id), #worker.Slots)
+		-- Walk to the machine it helps, if that machine is built
+		local machine = worker.WorkAt and plot.Model.Items:FindFirstChild(worker.WorkAt)
+		local target
+		if machine then
+			local center = machine:GetBoundingBox()
+			target = Vector3.new(center.X, plot.CFrame.Y, center.Z)
+		end
 		for index = 1, count do
 			local slotCFrame = plot.CFrame * CFrame.new(worker.Slots[index])
-			buildBot(worker, slotCFrame).Parent = folder
+			local offset = Vector3.new((index - (count + 1) / 2) * 3, 0, 0)
+			buildBot(worker, slotCFrame, target and (target + plot.CFrame:VectorToWorldSpace(offset + Vector3.new(0, 0, 7)))).Parent = folder
 		end
 		player:SetAttribute("Worker_" .. worker.Id, getCount(data, worker.Id))
+		player:SetAttribute("WorkerSlots_" .. worker.Id, WorkerConfig.GetMaxSlots(worker, data.Rebirths))
 	end
 end
 
@@ -103,6 +120,11 @@ local function hire(player, workerId)
 	local count = getCount(data, worker.Id)
 	if count >= #worker.Slots then
 		Net:Notify(player, worker.DisplayName .. " is maxed out.", "error")
+		return
+	end
+	if count >= WorkerConfig.GetMaxSlots(worker, data.Rebirths) then
+		local needed = WorkerConfig.SlotRebirths[count + 1] or 0
+		Net:Notify(player, ("Rebirth %d time(s) to unlock another %s slot."):format(needed, worker.DisplayName), "error")
 		return
 	end
 	if data.Robots < worker.Cost then
@@ -140,6 +162,7 @@ function WorkerService:Init(services)
 	PlotService = services.PlotService
 	PlayerService = services.PlayerService
 	QuestService = services.QuestService
+	TycoonService = services.TycoonService
 	Net = services.Net
 end
 
@@ -147,6 +170,52 @@ function WorkerService:Start()
 	PlayerService.PlayerReady:Connect(renderWorkers)
 	Net:On("HireWorker", hire, 3, 5)
 	Net:On("DismissWorker", dismiss, 3, 5)
+
+	-- Bots walk to machines, so redraw them when machines appear or the plot resets
+	TycoonService.ItemUnlocked:Connect(function(player, _, item, _, isRebuild)
+		if not isRebuild then
+			for _, worker in ipairs(WorkerConfig.Workers) do
+				if worker.WorkAt == item.Id then
+					renderWorkers(player)
+					break
+				end
+			end
+		end
+	end)
+	TycoonService.TycoonReset:Connect(function(player)
+		task.defer(renderWorkers, player)
+	end)
+
+	-- Collector Bots move part of the pad cash into cash every few seconds
+	task.spawn(function()
+		while true do
+			task.wait(WorkerConfig.CollectEvery)
+			for _, player in ipairs(Players:GetPlayers()) do
+				local fraction = self:GetAutoCollectFraction(player)
+				local data = fraction > 0 and DataService:GetData(player)
+				if data and data.PendingCash >= 1 then
+					local moved = EconomyService:CollectPart(player, fraction)
+					if moved > 0 then
+						Net:Fire(player, "CashPopup", moved)
+					end
+				end
+			end
+		end
+	end)
+end
+
+-- 0..1: share of pad cash the Collector Bots grab each round
+function WorkerService:GetAutoCollectFraction(player: Player): number
+	local data = DataService:GetData(player)
+	local fraction = 0
+	if data then
+		for _, worker in ipairs(WorkerConfig.Workers) do
+			if worker.Effect.Type == "AutoCollect" then
+				fraction += getCount(data, worker.Id) * worker.Effect.Amount
+			end
+		end
+	end
+	return math.min(1, fraction)
 end
 
 -- 1 + every DropperSpeed bonus

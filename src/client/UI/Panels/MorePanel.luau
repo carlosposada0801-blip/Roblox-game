@@ -14,10 +14,13 @@ MorePanel.OnOpen = nil -- set by MenuController
 MorePanel.Entries = {
 	{ Name = "Achievements", Icon = "🏅", Color = Theme.Accent, Panel = "AchievementsPanel" },
 	{ Name = "Style", Icon = "✨", Color = Theme.Pink, Panel = "CosmeticsPanel" },
+	{ Name = "Customize", Icon = "🎨", Color = Color3.fromRGB(255, 120, 160), Panel = "CustomizePanel" },
 	{ Name = "Contracts", Icon = "📜", Color = Color3.fromRGB(200, 150, 80), Panel = "ContractsPanel" },
 	{ Name = "Race", Icon = "🏁", Color = Color3.fromRGB(255, 200, 40), Panel = "RacePanel" },
 	{ Name = "Mine", Icon = "⛏️", Color = Theme.Purple, Panel = "MinePanel" },
 	{ Name = "Crew", Icon = "🛡️", Color = Theme.Blue, Panel = "CrewPanel" },
+	{ Name = "Codes", Icon = "🎟️", Color = Theme.Green, Panel = "CodesPanel" },
+	{ Name = "Settings", Icon = "⚙️", Color = Theme.Disabled, Panel = "SettingsPanel" },
 }
 
 function MorePanel.build()

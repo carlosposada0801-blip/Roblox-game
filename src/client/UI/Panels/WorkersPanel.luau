@@ -27,7 +27,7 @@ function WorkersPanel.build()
 		Size = UDim2.new(1, 0, 0, 22),
 		TextColor3 = Theme.SubText,
 		MaxTextSize = 16,
-		Text = "Every robot that reaches your collector adds 1. Spend them on workers!",
+		Text = "Every robot you build adds 1. Assign robots to worker slots! More slots unlock with rebirths.",
 		Parent = content,
 	})
 
@@ -72,6 +72,15 @@ function WorkersPanel.build()
 			MaxTextSize = 16,
 			Parent = card,
 		})
+		local bonusLabel = UIKit.label({
+			Position = UDim2.new(0, 84, 0, 60),
+			Size = UDim2.new(1, -260, 0, 22),
+			TextXAlignment = Enum.TextXAlignment.Right,
+			TextColor3 = Color3.fromRGB(120, 255, 140),
+			Font = Theme.Title,
+			MaxTextSize = 16,
+			Parent = card,
+		})
 		local countLabel = UIKit.label({
 			Position = UDim2.fromOffset(84, 60),
 			Size = UDim2.new(1, -260, 0, 22),
@@ -97,13 +106,27 @@ function WorkersPanel.build()
 			Position = UDim2.new(1, -10, 1, -8),
 			Size = UDim2.fromOffset(160, 28),
 			Color = Theme.Red,
-			Text = "Dismiss one",
+			Text = "Remove one",
 			Parent = card,
 		}, function()
 			Net.Fire("DismissWorker", worker.Id)
 		end)
 
-		cards[worker.Id] = { Worker = worker, Count = countLabel, Hire = hire, Dismiss = dismiss }
+		cards[worker.Id] = { Worker = worker, Count = countLabel, Bonus = bonusLabel, Hire = hire, Dismiss = dismiss }
+	end
+
+	local function bonusText(worker, count)
+		local amount = math.floor(count * worker.Effect.Amount * 100 + 0.5)
+		if count == 0 then
+			return ""
+		elseif worker.Effect.Type == "DropperSpeed" then
+			return ("Bonus: +%d%% dropper speed"):format(amount)
+		elseif worker.Effect.Type == "AutoCollect" then
+			return ("Bonus: grabs %d%% of pad cash"):format(math.min(100, amount))
+		elseif worker.Effect.Machine == "*" then
+			return ("Bonus: +%d%% every machine"):format(amount)
+		end
+		return ("Bonus: +%d%% %s value"):format(amount, worker.Effect.Machine)
 	end
 
 	local function update()
@@ -114,10 +137,15 @@ function WorkersPanel.build()
 			local worker = card.Worker
 			local count = player:GetAttribute("Worker_" .. worker.Id) or 0
 			local max = #worker.Slots
-			card.Count.Text = ("Hired %d / %d"):format(count, max)
+			local unlocked = player:GetAttribute("WorkerSlots_" .. worker.Id) or max
+			card.Count.Text = ("Slots %d / %d  (%d unlocked)"):format(count, max, unlocked)
+			card.Bonus.Text = bonusText(worker, count)
 
 			if count >= max then
 				card.Hire.Text = "MAXED"
+				card.Hire:SetAttribute("Disabled", true)
+			elseif count >= unlocked then
+				card.Hire.Text = ("🔒 %d rebirths"):format(WorkerConfig.SlotRebirths[count + 1] or 0)
 				card.Hire:SetAttribute("Disabled", true)
 			else
 				card.Hire.Text = ("Hire  •  %d 🤖"):format(worker.Cost)
@@ -130,6 +158,7 @@ function WorkersPanel.build()
 	player:GetAttributeChangedSignal("Robots"):Connect(update)
 	for _, worker in ipairs(WorkerConfig.Workers) do
 		player:GetAttributeChangedSignal("Worker_" .. worker.Id):Connect(update)
+		player:GetAttributeChangedSignal("WorkerSlots_" .. worker.Id):Connect(update)
 	end
 	update()
 

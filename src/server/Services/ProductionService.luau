@@ -28,6 +28,7 @@ local Format = require(Shared.Util.Format)
 
 local EconomyService, TycoonService, PlotService, PlayerService, WorkerService, Net
 local EventService, UpgradeService, RobotBookService, QuestService, MiningService, CoopService
+local BoostService, CosmeticService
 
 local Stages = ProductionConfig.Stages
 local UPDATE_INTERVAL = 1 / 20
@@ -231,6 +232,17 @@ local function createDrop(st, stage, value, cframe, options)
 
 	if stage == "Robot" then
 		addRobotDetails(part, options.Prototype, options.Rarity)
+		if options.Skin and not options.Prototype then
+			-- Robot skin cosmetic (CosmeticConfig.Skins): recolors the body, rarity eyes stay
+			part.Color = options.Skin.Color
+			part.Material = options.Skin.Material or part.Material
+			if options.Skin.Glow then
+				local light = Instance.new("PointLight")
+				light.Color = options.Skin.Color
+				light.Range = 6
+				light.Parent = part
+			end
+		end
 	end
 	if options.Golden then
 		part.Name = "Golden" .. stage
@@ -283,7 +295,10 @@ local function startDropper(player, st, item, model)
 	task.spawn(function()
 		while model.Parent and isCurrent(player, st) do
 			local _, speedBoost = UpgradeService:GetDropperBoosts(player, item.Id)
-			local speed = WorkerService:GetDropperSpeedMultiplier(player) * speedBoost * EventService:GetValue("DropperMultiplier", 1)
+			local speed = WorkerService:GetDropperSpeedMultiplier(player)
+				* speedBoost
+				* EventService:GetValue("DropperMultiplier", 1)
+				* BoostService:GetValue(player, "DropperMultiplier", 1)
 			task.wait(config.Interval / speed)
 			if not (model.Parent and isCurrent(player, st)) then
 				break
@@ -311,7 +326,8 @@ local function spawnRobot(player, st, machine, value, color, paintName, visited)
 		return
 	end
 
-	local prototype = st.ForcePrototype or math.random() < ProductionConfig.PrototypeChance
+	local chance = ProductionConfig.PrototypeChance * BoostService:GetValue(player, "PrototypeChanceMultiplier", 1)
+	local prototype = st.ForcePrototype or math.random() < chance
 	st.ForcePrototype = false
 	if prototype then
 		value *= ProductionConfig.PrototypeValueMultiplier
@@ -324,6 +340,7 @@ local function spawnRobot(player, st, machine, value, color, paintName, visited)
 	local zone = machine.Zone
 	createDrop(st, "Robot", value, zone.CFrame * CFrame.new(zone.Size.X / 2 + 1.2, 0, 0), {
 		Force = true,
+		Skin = CosmeticService:GetSkin(player),
 		Color = color,
 		PaintName = paintName,
 		Prototype = prototype,
@@ -344,6 +361,9 @@ local function process(player, st, machine, record)
 		* WorkerService:GetMachineMultiplier(player, machine.Item.Id)
 		* UpgradeService:GetMachineMultiplier(player, machine.Item.Id)
 		* MiningService:GetMachineMultiplier(player)
+	if EventService:IsBroken(machine.Model) then
+		multiplier *= EventService:GetValue("Malfunction", {}).BrokenValueMultiplier or 0.5
+	end
 	local part = record.Part
 	pulse(machine.Glow)
 
@@ -415,6 +435,10 @@ local function collect(player, st, record)
 		if record.Prototype then
 			EconomyService:AddStat(player, "Prototypes", 1)
 			Net:NotifyAll(player.DisplayName .. " built a ★ PROTOTYPE ★ robot!", "special")
+		end
+		-- Big sale: confetti and a little screen shake for Prototypes and Epic+ robots
+		if record.Prototype or (record.Rarity and record.Rarity.ValueMultiplier >= 5) then
+			Net:Fire(player, "Fx", "BigSale", record.Part.Position)
 		end
 	end
 
@@ -559,7 +583,7 @@ local function onItemUnlocked(player, plot, item, model)
 	if item.Machine then
 		local zone = model:FindFirstChild("Zone", true)
 		if zone then
-			table.insert(st.Machines, { Item = item, Zone = zone, Glow = model:FindFirstChild("Glow", true) })
+			table.insert(st.Machines, { Item = item, Zone = zone, Model = model, Glow = model:FindFirstChild("Glow", true) })
 		else
 			warn(("[Production] Machine %s has no part named 'Zone'"):format(item.Id))
 		end
@@ -592,6 +616,8 @@ function ProductionService:Init(services)
 	QuestService = services.QuestService
 	MiningService = services.MiningService
 	CoopService = services.CoopService
+	BoostService = services.BoostService
+	CosmeticService = services.CosmeticService
 end
 
 function ProductionService:Start()

@@ -15,9 +15,11 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local RebirthConfig = require(Shared.Config.RebirthConfig)
 local MonetizationConfig = require(Shared.Config.MonetizationConfig)
+local BoostConfig = require(Shared.Config.BoostConfig)
 local Format = require(Shared.Util.Format)
 
 local DataService, PetService, RobotBookService, EventService, QuestService, AscensionService, CrewService
+local BoostService, CosmeticService, CommunityService, LeaderboardService
 
 local EconomyService = {}
 
@@ -55,6 +57,10 @@ function EconomyService:Init(services)
 	QuestService = services.QuestService
 	AscensionService = services.AscensionService
 	CrewService = services.CrewService
+	BoostService = services.BoostService
+	CosmeticService = services.CosmeticService
+	CommunityService = services.CommunityService
+	LeaderboardService = services.LeaderboardService
 end
 
 -- Called once per player after their data loads.
@@ -101,7 +107,7 @@ function EconomyService:GetCash(player: Player): number
 	return data and data.Cash or 0
 end
 
--- Rebirths x 2x Cash pass x pets x collection book x active event
+-- Rebirths x 2x Cash pass x pets x collection book x active event x boosts x group x Premium
 function EconomyService:GetEarnMultiplier(player: Player): number
 	local data = DataService:GetData(player)
 	local multiplier = RebirthConfig.GetMultiplier(data and data.Rebirths or 0)
@@ -123,6 +129,12 @@ function EconomyService:GetEarnMultiplier(player: Player): number
 	if CrewService then
 		multiplier *= CrewService:GetMultiplier(player)
 	end
+	if BoostService then
+		multiplier *= BoostService:GetValue(player, "CashMultiplier", 1)
+	end
+	if CommunityService then
+		multiplier *= CommunityService:GetMultiplier(player)
+	end
 	if player.MembershipType == Enum.MembershipType.Premium then
 		multiplier *= 1 + MonetizationConfig.PremiumBonus
 	end
@@ -130,8 +142,9 @@ function EconomyService:GetEarnMultiplier(player: Player): number
 	return math.floor(multiplier * 100 + 0.5) / 100
 end
 
--- Gives a reward table { Cash, Robots, Prototypes }. Cash is multiplied by the
--- rebirth multiplier when scaleCash is true. Returns a short text like "+$5K, +3 🤖".
+-- Gives a reward table { Cash, Robots, Prototypes, Boost = { Id, Minutes }, Skin }.
+-- Cash is multiplied by the rebirth multiplier when scaleCash is true.
+-- Returns a short text like "+$5K, +3 🤖".
 function EconomyService:GrantReward(player: Player, reward, scaleCash: boolean?): string
 	local data = DataService:GetData(player)
 	if not data then
@@ -153,6 +166,12 @@ function EconomyService:GrantReward(player: Player, reward, scaleCash: boolean?)
 	if reward.Prototypes then
 		self:AddStat(player, "Prototypes", reward.Prototypes)
 		table.insert(parts, ("+%d ⭐ Prototype"):format(reward.Prototypes))
+	end
+	if reward.Boost and BoostService:Give(player, reward.Boost.Id, reward.Boost.Minutes) then
+		table.insert(parts, ("%d min %s boost"):format(reward.Boost.Minutes, BoostConfig.Boosts[reward.Boost.Id].Name))
+	end
+	if reward.Skin and CosmeticService:GiveSkin(player, reward.Skin) then
+		table.insert(parts, "a new robot skin")
 	end
 	return table.concat(parts, ", ")
 end
@@ -193,6 +212,9 @@ function EconomyService:Earn(player: Player, baseValue: number): number
 
 	local amount = baseValue * self:GetEarnMultiplier(player)
 	data.PendingCash += amount
+	if LeaderboardService then
+		LeaderboardService:AddWeeklyEarnings(player, amount)
+	end
 	if QuestService then
 		QuestService:Track(player, "CashEarned", amount)
 	end
@@ -222,6 +244,23 @@ function EconomyService:CollectPending(player: Player): number
 	data.TotalEarned += whole
 	sync(player, data)
 	return whole
+end
+
+-- Moves a fraction of the pad cash into cash (Collector Bots). Returns the amount moved.
+function EconomyService:CollectPart(player: Player, fraction: number): number
+	local data = DataService:GetData(player)
+	if not data or data.PendingCash < 1 then
+		return 0
+	end
+	local amount = math.floor(data.PendingCash * math.clamp(fraction, 0, 1))
+	if amount <= 0 then
+		return 0
+	end
+	data.PendingCash -= amount
+	data.Cash += amount
+	data.TotalEarned += amount
+	sync(player, data)
+	return amount
 end
 
 -- Removes a fraction of the cash waiting on the pad (rogue drones). Returns the amount taken.

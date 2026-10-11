@@ -15,6 +15,9 @@ return {
 	"TradeInvite", -- (fromUserId, fromName)
 	"TradeState", -- (state table)
 	"CoopInviteReceived", -- (fromUserId, fromName)
+	"ShowOffer", -- (offerId) e.g. "StarterPack"
+	"CodeResult", -- (ok, message)
+	"BattleState", -- (state table) robot battle arena
 
 	-- client -> server
 	"RequestRebirth", -- ()
@@ -36,7 +39,6 @@ return {
 	"BuyWeapon", -- (weaponId)
 	"SetPvP", -- (on)
 	"FireWeapon", -- (weaponId, targetPosition) ranged weapons
-	"TutorialDone", -- ()
 	"CosmeticAction", -- (action: "Buy" | "Title" | "Trail" | "Accent", id)
 	"Ascend", -- ()
 	"ContractAction", -- (action: "Accept" | "Abandon", index)
@@ -46,4 +48,10 @@ return {
 	"CoopRespond", -- (fromUserId, accept)
 	"CoopLeave", -- ()
 	"CrewAction", -- (action: "Create" | "Join" | "Leave" | "Donate" | "Upgrade", arg)
+	"RedeemCode", -- (text)
+	"CheckGroup", -- ()
+	"BattleAction", -- (action: "Queue" | "Leave")
+	"YardAction", -- (action: "Place" | "Remove", x, y, pieceType, rotation)
+	"CustomAction", -- (action: "Buy" | "Equip" | "Sign", slotOrId, value)
+	"TutorialProgress", -- (step) or ("Skip")
 }

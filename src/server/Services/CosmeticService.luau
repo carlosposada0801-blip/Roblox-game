@@ -1,11 +1,13 @@
 --[[
 	CosmeticService
-	Titles (from achievements), trails and factory accent colors
-	(CosmeticConfig). Equipped choices are saved in data.Cosmetics.
+	Titles (from achievements and weekly prizes), trails, factory accent
+	colors and robot skins (CosmeticConfig). Equipped choices are saved in
+	data.Cosmetics; bought/earned ones in data.OwnedCosmetics.
 	  Title  -> attribute Title, overhead tag, and a chat tag (client)
 	  Trail  -> a glowing Trail behind the character
 	  Accent -> recolors your factory's neon (PlotService:Restyle)
-	Remote CosmeticAction(action, id): "Buy", "Title", "Trail", "Accent"
+	  Skin   -> recolors robots your factory builds (ProductionService asks GetSkin)
+	Remote CosmeticAction(action, id): "Buy", "Title", "Trail", "Accent", "Skin"
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -15,7 +17,7 @@ local CosmeticConfig = require(Shared.Config.CosmeticConfig)
 local AchievementConfig = require(Shared.Config.AchievementConfig)
 local Format = require(Shared.Util.Format)
 
-local DataService, EconomyService, PlotService, PlayerService, AchievementService, AscensionService, Net
+local DataService, EconomyService, PlotService, PlayerService, AchievementService, AscensionService, CustomizationService, Net
 
 local CosmeticService = {}
 
@@ -25,6 +27,9 @@ for _, trail in ipairs(CosmeticConfig.Trails) do
 end
 for _, accent in ipairs(CosmeticConfig.Accents) do
 	byId[accent.Id] = { Kind = "Accent", Item = accent }
+end
+for _, skin in ipairs(CosmeticConfig.Skins) do
+	byId[skin.Id] = { Kind = "Skin", Item = skin }
 end
 local titleByAchievement = {}
 for _, achievement in ipairs(AchievementConfig.Achievements) do
@@ -40,6 +45,9 @@ local function owns(player, id)
 	if entry.Item.Achievement then
 		return data.Achievements[entry.Item.Achievement] ~= nil
 	end
+	if entry.Item.Exclusive then
+		return data.OwnedCosmetics[id] == true
+	end
 	return data.OwnedCosmetics[id] == true or (entry.Item.Price or 0) == 0
 end
 
@@ -47,6 +55,9 @@ local function ownsTitle(player, title)
 	local data = DataService:GetData(player)
 	if not data then
 		return false
+	end
+	if data.OwnedTitles[title] then
+		return true
 	end
 	for achievementId in pairs(data.Achievements) do
 		if titleByAchievement[achievementId] == title then
@@ -137,9 +148,11 @@ function CosmeticService:ApplyPlotStyle(player: Player)
 	end
 	local theme = AscensionService:GetTheme(data.Ascensions)
 	local accent = byId[data.Cosmetics.Accent]
+	-- A floor picked in Customize wins over the ascension theme's floor
+	local floorColor, floorMaterial = CustomizationService:GetFloorStyle(player)
 	PlotService:Restyle(plot, {
-		Base = theme.Base,
-		Material = theme.Material,
+		Base = floorColor or theme.Base,
+		Material = floorMaterial or theme.Material,
 		Accent = if accent then accent.Item.Color else theme.Accent,
 	})
 end
@@ -154,6 +167,12 @@ local function sync(player)
 	end
 	player:SetAttribute("EquippedTrail", data.Cosmetics.Trail)
 	player:SetAttribute("EquippedAccent", data.Cosmetics.Accent)
+	player:SetAttribute("EquippedSkin", data.Cosmetics.Skin)
+	local titles = {}
+	for title in pairs(data.OwnedTitles) do
+		table.insert(titles, title)
+	end
+	player:SetAttribute("ExtraTitles", table.concat(titles, "\n"))
 	player:SetAttribute("Title", data.Cosmetics.Title)
 end
 
@@ -164,7 +183,7 @@ local function action(player, kind, id)
 	end
 	if kind == "Buy" then
 		local entry = byId[id]
-		if not entry or entry.Item.Achievement or owns(player, id) then
+		if not entry or entry.Item.Achievement or entry.Item.Exclusive or owns(player, id) then
 			return
 		end
 		if not EconomyService:TrySpend(player, entry.Item.Price) then
@@ -180,18 +199,80 @@ local function action(player, kind, id)
 		end
 		data.Cosmetics.Title = id
 		applyTitle(player)
-	elseif kind == "Trail" or kind == "Accent" then
+	elseif kind == "Trail" or kind == "Accent" or kind == "Skin" then
 		if id ~= "" and (not byId[id] or byId[id].Kind ~= kind or not owns(player, id)) then
 			return
 		end
 		data.Cosmetics[kind] = id
 		if kind == "Trail" then
 			applyTrail(player)
-		else
+		elseif kind == "Accent" then
 			CosmeticService:ApplyPlotStyle(player)
 		end
 	end
 	sync(player)
+end
+
+-- Gives a cosmetic (exclusive skins from the Starter Pack, bosses, weekly prizes, codes, trades).
+-- Returns false if the player already owns it.
+function CosmeticService:GiveSkin(player: Player, id: string): boolean
+	local data = DataService:GetData(player)
+	if not (data and byId[id]) or data.OwnedCosmetics[id] then
+		return false
+	end
+	data.OwnedCosmetics[id] = true
+	sync(player)
+	return true
+end
+
+-- Removes an owned cosmetic (trading it away). Unequips it if needed.
+function CosmeticService:TakeCosmetic(player: Player, id: string): boolean
+	local data = DataService:GetData(player)
+	local entry = byId[id]
+	if not (data and entry and data.OwnedCosmetics[id]) then
+		return false
+	end
+	data.OwnedCosmetics[id] = nil
+	if data.Cosmetics[entry.Kind] == id then
+		data.Cosmetics[entry.Kind] = ""
+		if entry.Kind == "Trail" then
+			applyTrail(player)
+		elseif entry.Kind == "Accent" then
+			CosmeticService:ApplyPlotStyle(player)
+		end
+	end
+	sync(player)
+	return true
+end
+
+function CosmeticService:IsTradable(player: Player, id: string): boolean
+	local data = DataService:GetData(player)
+	local entry = byId[id]
+	return data ~= nil and entry ~= nil and entry.Item.Tradable == true and data.OwnedCosmetics[id] == true
+end
+
+function CosmeticService:GetName(id: string): string
+	local entry = byId[id]
+	return if entry then entry.Item.Name else id
+end
+
+-- Grants a title that doesn't come from an achievement (weekly leaderboard prizes).
+function CosmeticService:GiveTitle(player: Player, title: string)
+	local data = DataService:GetData(player)
+	if data and not data.OwnedTitles[title] then
+		data.OwnedTitles[title] = true
+		sync(player)
+	end
+end
+
+-- The equipped robot skin's config entry, or nil.
+function CosmeticService:GetSkin(player: Player)
+	local data = DataService:GetData(player)
+	local entry = data and byId[data.Cosmetics.Skin]
+	if entry and entry.Kind == "Skin" and owns(player, data.Cosmetics.Skin) then
+		return entry.Item
+	end
+	return nil
 end
 
 function CosmeticService:Init(services)
@@ -201,10 +282,14 @@ function CosmeticService:Init(services)
 	PlayerService = services.PlayerService
 	AchievementService = services.AchievementService
 	AscensionService = services.AscensionService
+	CustomizationService = services.CustomizationService
 	Net = services.Net
 end
 
 function CosmeticService:Start()
+	CustomizationService.FloorChanged = function(player)
+		self:ApplyPlotStyle(player)
+	end
 	PlayerService.PlayerReady:Connect(function(player)
 		sync(player)
 		self:ApplyPlotStyle(player)

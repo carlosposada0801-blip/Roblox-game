@@ -11,6 +11,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local QuestConfig = require(Shared.Config.QuestConfig)
+local Time = require(Shared.Util.Time)
 
 local DataService, EconomyService, PlayerService, ContractService, Net
 
@@ -22,7 +23,7 @@ for _, quest in ipairs(QuestConfig.Pool) do
 end
 
 local function today()
-	return os.time() // 86400
+	return Time.day()
 end
 
 local function sync(player)

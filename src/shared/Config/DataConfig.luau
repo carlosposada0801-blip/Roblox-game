@@ -46,11 +46,14 @@ DataConfig.Template = {
 	Quests = { Day = 0, List = {} },
 	Settings = {
 		GuideArrow = true, -- arrow pointing at the next thing to buy
+		Music = true,
+		Sfx = true,
+		ScreenShake = true,
 	},
 	TutorialDone = false,
 	Ascensions = 0, -- prestige level (AscensionConfig)
 	Achievements = {}, -- [achievementId] = os.time()
-	Cosmetics = { Title = "", Trail = "", Accent = "" }, -- equipped
+	Cosmetics = { Title = "", Trail = "", Accent = "", Skin = "" }, -- equipped
 	OwnedCosmetics = {}, -- [cosmeticId] = true (bought; achievement ones unlock automatically)
 	BossKills = 0, -- boss raids won
 	DroneKills = 0, -- rogue drones destroyed
@@ -61,6 +64,25 @@ DataConfig.Template = {
 	Cores = 0, -- crafted Machine Cores (+value to every machine)
 	Crew = "", -- crew name (CrewService)
 	StarterPackBought = false,
+
+	-- v2.3
+	TutorialStep = 0, -- tutorial progress, so it continues where you left off
+	Sessions = 0, -- times joined (Starter Pack offer)
+	PlayTime = 0, -- seconds played, all sessions
+	Boosts = {}, -- [boostId] = seconds left (BoostConfig)
+	RedeemedCodes = {}, -- [CODE] = os.time()
+	GroupRewardClaimed = false,
+	OwnedTitles = {}, -- [title] = true, titles not from achievements (weekly winners)
+	Trades = 0, -- completed trades
+	BattleWins = 0, -- robot battle arena (BattleConfig)
+	BattleLosses = 0,
+	WeeklyClaimed = {}, -- [tostring(week)] = true, weekly top-3 prizes already given
+	Weekly = { Week = 0, Earned = 0 }, -- cash earned this week (weekly leaderboard)
+	Custom = { Wall = "", Floor = "", Machine = "", Sign = "", Decor = {} }, -- factory customization
+	OwnedCustom = {}, -- [customId] = true
+	Yard = {}, -- logistics yard pieces: ["x,y"] = { Type, Rot }
+	SkyUnlocked = 0, -- 1 once the Sky Factory is unlocked
+	Sky = { Unlocked = {}, Levels = {} }, -- Sky Factory progress, kept through rebirths
 }
 
 return DataConfig

@@ -5,12 +5,14 @@
 	(ProcessReceipt for products). Nothing is granted from the client.
 ]]
 
+local GroupService = game:GetService("GroupService")
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local MonetizationConfig = require(Shared.Config.MonetizationConfig)
+local GroupConfig = require(Shared.Config.GroupConfig)
 local UIKit = require(script.Parent.Parent.UIKit)
 local Net = require(script.Parent.Parent.Parent.Net)
 
@@ -141,6 +143,31 @@ function ShopPanel.build()
 		premiumButton.Text = "ACTIVE ✓"
 		premiumButton:SetAttribute("Disabled", true)
 	end
+
+	-- Group (community) reward
+	makeHeader(list, "Free Rewards", 300)
+	local groupButton = makeCard(list, {
+		Icon = "👥",
+		DisplayName = "Join Our Group",
+		Description = ("Join the group for %s cash right away and +%d%% cash forever! Joined already? Press CHECK."):format(
+			"$" .. tostring(GroupConfig.JoinCash // 1000) .. "K",
+			GroupConfig.CashBonus * 100
+		),
+		PriceText = "JOIN / CHECK",
+	}, 301, Theme.Blue, function()
+		if GroupConfig.GroupId ~= 0 and player:GetAttribute("InGroup") ~= true then
+			-- Roblox's own join prompt (no need to leave the game), then re-check
+			pcall(GroupService.PromptJoinAsync, GroupService, GroupConfig.GroupId)
+		end
+		Net.Fire("CheckGroup")
+	end)
+	local function updateGroup()
+		local member = player:GetAttribute("InGroup") == true
+		groupButton.Text = if member then "MEMBER ✓" else "JOIN / CHECK"
+		groupButton:SetAttribute("BaseColor", if member then Theme.Green else Theme.Blue)
+	end
+	player:GetAttributeChangedSignal("InGroup"):Connect(updateGroup)
+	updateGroup()
 
 	local function updatePasses()
 		for key, pass in pairs(passButtons) do

@@ -4,6 +4,9 @@
 	or the special stats listed in AchievementService). Each can award a
 	Roblox badge (BadgeId; create badges in the Creator Dashboard and paste
 	the IDs; 0 = no badge) and unlock a chat/overhead Title.
+
+	Badge checklist (create these first): FirstRobot, FirstRebirth, Rebirth10,
+	Prototype, BossSlayer, SkyHigh, FirstTrade, Famous (100 likes).
 ]]
 
 return {
@@ -30,5 +33,9 @@ return {
 		{ Id = "Miner", Name = "Deep Miner", Description = "Craft a Machine Core", Stat = "Cores", Goal = 1, BadgeId = 0, Title = "⛏️ Miner" },
 		{ Id = "Mythic", Name = "Mythical", Description = "Own a Mythic pet", Stat = "MythicPets", Goal = 1, BadgeId = 0, Title = "🌌 Mythical" },
 		{ Id = "Popular", Name = "Popular", Description = "Get 25 likes on your factory", Stat = "Likes", Goal = 25, BadgeId = 0, Title = "👍 Popular" },
+		{ Id = "Famous", Name = "Famous Factory", Description = "Get 100 likes on your factory", Stat = "Likes", Goal = 100, BadgeId = 0, Title = "🌟 Famous" },
+		{ Id = "SkyHigh", Name = "Sky High", Description = "Unlock the Sky Factory", Stat = "SkyUnlocked", Goal = 1, BadgeId = 0, Title = "☁️ Sky Boss" },
+		{ Id = "FirstTrade", Name = "Deal Maker", Description = "Complete your first trade", Stat = "Trades", Goal = 1, BadgeId = 0, Title = "🤝 Trader" },
+		{ Id = "BattleWinner", Name = "Bot Brawler", Description = "Win a robot battle", Stat = "BattleWins", Goal = 1, BadgeId = 0, Title = "🥊 Bot Brawler" },
 	},
 }

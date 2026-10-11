@@ -5,7 +5,9 @@
 ]]
 
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local CosmeticConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("CosmeticConfig"))
 local UIKit = require(script.Parent.Parent.UI.UIKit)
 local Net = require(script.Parent.Parent.Net)
 local Sfx = require(script.Parent.Parent.Sfx)
@@ -45,7 +47,7 @@ local function inviteDialog(fromUserId, fromName)
 end
 
 function TradeController:Start()
-	local window, content = UIKit.window("🤝 TRADE", Theme.Accent, Vector2.new(600, 420))
+	local window, content = UIKit.window("🤝 TRADE", Theme.Accent, Vector2.new(600, 520))
 	window.Parent = UIKit.root()
 	window:FindFirstChild("Close", true).Activated:Connect(function()
 		Net.Fire("TradeCancel")
@@ -53,10 +55,13 @@ function TradeController:Start()
 
 	local partnerLabel = UIKit.label({ Size = UDim2.new(1, 0, 0, 28), Font = Theme.Title, MaxTextSize = 24, Parent = content })
 
-	local myOffer = { Robots = 0, Prototypes = 0 }
+	local myOffer = { Robots = 0, Prototypes = 0, Cosmetics = {} }
+	local function sendOffer()
+		Net.Fire("TradeOffer", myOffer.Robots, myOffer.Prototypes, myOffer.Cosmetics)
+	end
 
 	local function column(x, title)
-		local card = UIKit.card({ Position = UDim2.new(x, x == 0 and 0 or 6, 0, 36), Size = UDim2.new(0.5, -6, 0, 210), Parent = content }, Theme.PanelLight)
+		local card = UIKit.card({ Position = UDim2.new(x, x == 0 and 0 or 6, 0, 36), Size = UDim2.new(0.5, -6, 0, 300), Parent = content }, Theme.PanelLight)
 		UIKit.label({ Position = UDim2.fromOffset(0, 8), Size = UDim2.new(1, 0, 0, 26), Font = Theme.Title, Text = title, MaxTextSize = 20, Parent = card })
 		return card
 	end
@@ -78,12 +83,48 @@ function TradeController:Start()
 			}, function()
 				local owned = player:GetAttribute(item.Key) or 0
 				myOffer[item.Key] = math.clamp(myOffer[item.Key] + step, 0, owned)
-				Net.Fire("TradeOffer", myOffer.Robots, myOffer.Prototypes)
+				sendOffer()
 			end)
 		end
 	end
 
-	local status = UIKit.label({ Position = UDim2.fromOffset(0, 252), Size = UDim2.new(1, 0, 0, 24), Font = Theme.Title, MaxTextSize = 20, Parent = content })
+	-- Tradable robot skins: tap to add/remove from your offer
+	UIKit.label({ Position = UDim2.fromOffset(10, 200), Size = UDim2.new(1, -20, 0, 20), Font = Theme.Title, Text = "🎨 SKINS (tap to offer)", MaxTextSize = 15, Parent = mine })
+	local skinRow = UIKit.create("ScrollingFrame", {
+		Position = UDim2.fromOffset(8, 224),
+		Size = UDim2.new(1, -16, 0, 68),
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		ScrollBarThickness = 4,
+		AutomaticCanvasSize = Enum.AutomaticSize.Y,
+		CanvasSize = UDim2.new(),
+		Parent = mine,
+	}, { UIKit.create("UIGridLayout", { CellSize = UDim2.new(0.5, -4, 0, 30), CellPadding = UDim2.fromOffset(4, 4) }) })
+	local theirSkins = UIKit.label({ Position = UDim2.fromOffset(10, 200), Size = UDim2.new(1, -20, 0, 90), TextWrapped = true, TextYAlignment = Enum.TextYAlignment.Top, MaxTextSize = 16, Parent = theirs })
+
+	local function refreshSkins()
+		for _, child in ipairs(skinRow:GetChildren()) do
+			if child:IsA("GuiButton") then
+				child:Destroy()
+			end
+		end
+		for _, skin in ipairs(CosmeticConfig.Skins) do
+			if skin.Tradable and player:GetAttribute("Owns_" .. skin.Id) then
+				local offered = table.find(myOffer.Cosmetics, skin.Id) ~= nil
+				UIKit.button({ Color = if offered then Theme.Green else Theme.PanelLight, Text = (if offered then "✓ " else "") .. skin.Name, Parent = skinRow }, function()
+					local index = table.find(myOffer.Cosmetics, skin.Id)
+					if index then
+						table.remove(myOffer.Cosmetics, index)
+					else
+						table.insert(myOffer.Cosmetics, skin.Id)
+					end
+					sendOffer()
+				end)
+			end
+		end
+	end
+
+	local status = UIKit.label({ Position = UDim2.fromOffset(0, 342), Size = UDim2.new(1, 0, 0, 24), Font = Theme.Title, MaxTextSize = 20, Parent = content })
 	local ready = UIKit.button({
 		AnchorPoint = Vector2.new(0, 1),
 		Position = UDim2.fromScale(0, 1),
@@ -113,7 +154,7 @@ function TradeController:Start()
 		current = state or {}
 		if not current.Active then
 			window.Visible = false
-			myOffer = { Robots = 0, Prototypes = 0 }
+			myOffer = { Robots = 0, Prototypes = 0, Cosmetics = {} }
 			return
 		end
 		if not window.Visible then
@@ -122,7 +163,10 @@ function TradeController:Start()
 		partnerLabel.Text = "Trading with " .. tostring(current.PartnerName)
 		local mineOffer = current.MyOffer or {}
 		local theirOffer = current.TheirOffer or {}
-		myOffer = { Robots = mineOffer.Robots or 0, Prototypes = mineOffer.Prototypes or 0 }
+		myOffer = { Robots = mineOffer.Robots or 0, Prototypes = mineOffer.Prototypes or 0, Cosmetics = mineOffer.Cosmetics or {} }
+		refreshSkins()
+		local names = theirOffer.CosmeticNames or {}
+		theirSkins.Text = if #names > 0 then "🎨 " .. table.concat(names, ", ") else "🎨 no skins"
 		myLabels.Robots.Text = "🤖 " .. myOffer.Robots
 		myLabels.Prototypes.Text = "⭐ " .. myOffer.Prototypes
 		theirLabels.Robots.Text = "🤖 " .. (theirOffer.Robots or 0)

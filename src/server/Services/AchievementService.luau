@@ -88,6 +88,24 @@ function AchievementService:Has(player: Player, id: string): boolean
 	return data ~= nil and data.Achievements[id] ~= nil
 end
 
+-- Awards badges for achievements unlocked before their BadgeId was filled in
+-- (or when an earlier award failed). AwardBadge does nothing if they own it.
+local function catchUpBadges(player)
+	local data = DataService:GetData(player)
+	if not data then
+		return
+	end
+	for _, achievement in ipairs(AchievementConfig.Achievements) do
+		if achievement.BadgeId and achievement.BadgeId ~= 0 and data.Achievements[achievement.Id] and player.Parent then
+			local ok, owned = pcall(BadgeService.UserHasBadgeAsync, BadgeService, player.UserId, achievement.BadgeId)
+			if ok and not owned then
+				pcall(BadgeService.AwardBadge, BadgeService, player.UserId, achievement.BadgeId)
+			end
+			task.wait(0.5) -- stay well under the badge request limits
+		end
+	end
+end
+
 function AchievementService:Init(services)
 	DataService = services.DataService
 	PlayerService = services.PlayerService
@@ -98,6 +116,7 @@ function AchievementService:Start()
 	PlayerService.PlayerReady:Connect(function(player)
 		sync(player)
 		self:Check(player)
+		task.spawn(catchUpBadges, player)
 	end)
 	task.spawn(function()
 		while true do

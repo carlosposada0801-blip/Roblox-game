@@ -11,7 +11,7 @@
 	  /buy <name>        run a developer product through ProcessReceipt's grant code:
 	                     SmallCash, MediumCash, LargeCash, NextUpgrade, Prototype
 	  /rebirths <n>      set your rebirth count (try 2 to unlock the 2nd floor)
-	  /event <id>        start an event: GoldenRush, PowerSurge, CashFrenzy, RobotParade
+	  /event <id>        start an event: PowerSurge, GoldenRain, Malfunction, CashFrenzy, RobotParade
 	  /pet <type>        get a pet: Bolt, Gear, Spark, Nova, Pulse, Omega, Celestia
 	  /daily             make today's daily reward claimable again
 	  /quests            finish all of today's quests
@@ -101,7 +101,7 @@ function DevCommands:Init(services)
 	end
 
 	commands["/event"] = function(_, args)
-		print(EventService:StartEvent(args[2] or "") and "[Dev] Event started" or "[Dev] Unknown event. Try GoldenRush, PowerSurge, CashFrenzy, RobotParade")
+		print(EventService:StartEvent(args[2] or "") and "[Dev] Event started" or "[Dev] Unknown event. Try PowerSurge, GoldenRain, Malfunction, CashFrenzy, RobotParade")
 	end
 
 	commands["/pet"] = function(player, args)

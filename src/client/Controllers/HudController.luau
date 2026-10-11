@@ -11,6 +11,8 @@ local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 
 local Format = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Util"):WaitForChild("Format"))
+local Time = require(ReplicatedStorage.Shared.Util.Time)
+local BoostConfig = require(ReplicatedStorage.Shared.Config.BoostConfig)
 local UIKit = require(script.Parent.Parent.UI.UIKit)
 local Net = require(script.Parent.Parent.Net)
 
@@ -104,6 +106,28 @@ function HudController:Start(controllers)
 	local premiumLabel = makePill(row, 5, Color3.fromRGB(255, 220, 80))
 	premiumLabel.Text = "⭐ Premium"
 	premiumLabel.Parent.Visible = player.MembershipType == Enum.MembershipType.Premium
+
+	-- Active boosts with a countdown (BoostService)
+	local order = 10
+	for id, boost in pairs(BoostConfig.Boosts) do
+		order += 1
+		local label = makePill(row, order, boost.Color)
+		label.Parent.Size = UDim2.fromOffset(120, 30)
+		local function update()
+			local seconds = player:GetAttribute("Boost_" .. id) or 0
+			label.Parent.Visible = seconds > 0
+			label.Text = boost.Icon .. " " .. Time.format(seconds)
+		end
+		player:GetAttributeChangedSignal("Boost_" .. id):Connect(update)
+		update()
+	end
+	local groupLabel = makePill(row, 30, Color3.fromRGB(80, 160, 255))
+	groupLabel.Text = "👥 +Group"
+	local function updateGroup()
+		groupLabel.Parent.Visible = player:GetAttribute("InGroup") == true
+	end
+	player:GetAttributeChangedSignal("InGroup"):Connect(updateGroup)
+	updateGroup()
 
 	-- Wait for the server to finish loading this player
 	while player:GetAttribute("DataLoaded") ~= true do

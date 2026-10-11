@@ -32,7 +32,7 @@ local MonetizationConfig = require(Shared.Config.MonetizationConfig)
 local RebirthConfig = require(Shared.Config.RebirthConfig)
 local Format = require(Shared.Util.Format)
 
-local DataService, EconomyService, TycoonService, PetService, Net
+local DataService, EconomyService, TycoonService, Net
 
 local MonetizationService = {}
 
@@ -113,11 +113,11 @@ local function grantProduct(player, product)
 		end
 	elseif product.Kind == "StarterPack" then
 		-- Granted every time it's bought (Roblox can't stop a re-purchase), but the shop hides it after the first
-		local text = EconomyService:GrantReward(player, { Cash = product.Cash, Robots = product.Robots }, false)
-		PetService:GivePet(player, product.Pet)
+		local text = EconomyService:GrantReward(player, product.Reward, false)
 		data.StarterPackBought = true
 		player:SetAttribute("StarterPackBought", true)
-		Net:Notify(player, ("Thanks! Starter Pack: %s and a %s pet!"):format(text, product.Pet), "success")
+		Net:Notify(player, "Thanks! Starter Pack: " .. text .. "!", "success")
+		Net:Fire(player, "Fx", "Confetti")
 	elseif product.Kind == "Prototype" then
 		EconomyService:AddStat(player, "Prototypes", 1)
 		Net:Notify(player, "Thanks! You unlocked a ★ PROTOTYPE ★ robot. Take it to the arena!", "special")
@@ -235,7 +235,6 @@ function MonetizationService:Init(services)
 	DataService = services.DataService
 	EconomyService = services.EconomyService
 	TycoonService = services.TycoonService
-	PetService = services.PetService
 	Net = services.Net
 	warnPlaceholders()
 end

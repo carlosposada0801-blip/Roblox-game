@@ -28,6 +28,20 @@ SoundConfig.Sounds = {
 	-- Collecting cash from the pad: quick "cha-ching"
 	Cash = { Notes = { { Pitch = 2 }, { Pitch = 2.6, Delay = 0.05 }, { Pitch = 2.6, Delay = 0.1 } } },
 
+	-- Random event starting: siren (up-down twice)
+	Event = {
+		Notes = {
+			{ Pitch = 1.6 },
+			{ Pitch = 2.2, Delay = 0.15 },
+			{ Pitch = 1.6, Delay = 0.3 },
+			{ Pitch = 2.2, Delay = 0.45 },
+			{ Pitch = 2.8, Delay = 0.6 },
+		},
+	},
+
+	-- Countdown tick (boss raid, battles)
+	Tick = { Notes = { { Pitch = 2.4 } } },
+
 	-- Rebirth: long rising arpeggio
 	Rebirth = {
 		Notes = {

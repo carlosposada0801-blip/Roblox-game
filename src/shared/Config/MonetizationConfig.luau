@@ -95,13 +95,11 @@ MonetizationConfig.Products = {
 	StarterPack = {
 		Id = 0,
 		DisplayName = "Starter Pack",
-		Description = "$25K, 10 robots and a Gear pet. One-time deal for new bosses!",
+		Description = "$25K cash, 30 minutes of 2x Cash and the exclusive Founder Gold robot skin. One-time deal!",
 		Icon = "🎒",
 		PriceText = "R$ 49",
 		Kind = "StarterPack",
-		Cash = 25000,
-		Robots = 10,
-		Pet = "Gear",
+		Reward = { Cash = 25000, Boost = { Id = "CashX2", Minutes = 30 }, Skin = "SkinStarter" },
 		Order = 0,
 	},
 	Prototype = {
@@ -117,6 +115,13 @@ MonetizationConfig.Products = {
 
 -- Cash packs are multiplied by the buyer's rebirth multiplier so they stay useful
 MonetizationConfig.CashPacksScaleWithRebirths = true
+
+-- Starter Pack popup: shown once after this many seconds of play in the first
+-- session, and once more early in the second session, unless already bought.
+MonetizationConfig.StarterOffer = {
+	FirstSessionDelay = 180,
+	SecondSessionDelay = 45,
+}
 
 -- How many processed receipt IDs to remember per player (prevents double grants)
 MonetizationConfig.ReceiptHistorySize = 50

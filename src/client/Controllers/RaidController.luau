@@ -9,6 +9,7 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
 local UIKit = require(script.Parent.Parent.UI.UIKit)
+local Sfx = require(script.Parent.Parent.Sfx)
 
 local Theme = UIKit.Theme
 local player = Players.LocalPlayer
@@ -25,8 +26,10 @@ function RaidController:Start()
 		Visible = false,
 		Parent = root,
 	}, Theme.Red)
-	UIKit.label({ Position = UDim2.fromOffset(10, 4), Size = UDim2.new(1, -20, 0, 22), Font = Theme.Title, Text = "☠️ BOSS RAID: LOBBY", TextColor3 = Theme.Red, MaxTextSize = 18, Parent = bossBar })
-	local _, setHealth = UIKit.progressBar({ Position = UDim2.fromOffset(10, 30), Size = UDim2.new(1, -20, 0, 24), Parent = bossBar }, Theme.Red)
+	local bossTitle = UIKit.label({ Position = UDim2.fromOffset(10, 4), Size = UDim2.new(1, -20, 0, 22), Font = Theme.Title, Text = "☠️ BOSS RAID: LOBBY", TextColor3 = Theme.Red, MaxTextSize = 18, Parent = bossBar })
+	local healthBar, setHealth = UIKit.progressBar({ Position = UDim2.fromOffset(10, 30), Size = UDim2.new(1, -20, 0, 24), Parent = bossBar }, Theme.Red)
+	local countdown = UIKit.label({ Position = UDim2.fromOffset(10, 28), Size = UDim2.new(1, -20, 0, 30), Font = Theme.Title, TextColor3 = Theme.Accent, MaxTextSize = 28, Parent = bossBar })
+	local lastTick = 0
 
 	local contract = UIKit.card({
 		AnchorPoint = Vector2.new(1, 0),
@@ -49,8 +52,22 @@ function RaidController:Start()
 
 	RunService.Heartbeat:Connect(function()
 		local active = workspace:GetAttribute("BossActive") == true
-		bossBar.Visible = active
+		local incoming = math.max(0, (workspace:GetAttribute("BossIncomingAt") or 0) - workspace:GetServerTimeNow())
+		bossBar.Visible = active or incoming > 0
+		healthBar.Visible = active
+		countdown.Visible = not active
+		if not active and incoming > 0 then
+			bossTitle.Text = "☠️ BOSS INCOMING: LOBBY"
+			countdown.Text = ("LANDS IN %d:%02d"):format(incoming // 60, math.floor(incoming % 60))
+			-- Tick for the last 10 seconds
+			local whole = math.ceil(incoming)
+			if whole <= 10 and whole ~= lastTick then
+				lastTick = whole
+				Sfx.play("Tick")
+			end
+		end
 		if active then
+			bossTitle.Text = "☠️ BOSS RAID: LOBBY"
 			local health = workspace:GetAttribute("BossHealth") or 0
 			local max = math.max(1, workspace:GetAttribute("BossMaxHealth") or 1)
 			local remaining = math.max(0, (workspace:GetAttribute("BossEndsAt") or 0) - workspace:GetServerTimeNow())

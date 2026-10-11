@@ -4,7 +4,8 @@
 	in the lobby. While it's alive everyone has their weapons, and anyone
 	can also click/tap it. It stomps a random nearby player (red warning
 	circle first). Everyone who damaged it shares the reward when it falls.
-	workspace attributes: BossActive, BossHealth, BossMaxHealth, BossEndsAt
+	workspace attributes: BossActive, BossHealth, BossMaxHealth, BossEndsAt,
+	BossIncomingAt (countdown before it lands), BossNextAt (next scheduled raid)
 ]]
 
 local Debris = game:GetService("Debris")
@@ -17,7 +18,7 @@ local BossConfig = require(Shared.Config.BossConfig)
 local RebirthConfig = require(Shared.Config.RebirthConfig)
 local Format = require(Shared.Util.Format)
 
-local DataService, EconomyService, CombatService, Net
+local DataService, EconomyService, CombatService, CosmeticService, Net
 
 local BossService = {}
 
@@ -133,6 +134,12 @@ local function finish(defeated)
 		total += amount
 	end
 	Net:NotifyAll("🏆 The Omega Destroyer has been defeated! Rewards for everyone who helped!", "special")
+	local top, topAmount = nil, 0
+	for player, amount in pairs(current.Damage) do
+		if amount > topAmount then
+			top, topAmount = player, amount
+		end
+	end
 	for player, amount in pairs(current.Damage) do
 		local data = player.Parent and DataService:GetData(player)
 		if data then
@@ -145,6 +152,11 @@ local function finish(defeated)
 			if math.random() < BossConfig.Reward.PrototypeChance then
 				EconomyService:AddStat(player, "Prototypes", 1)
 				text ..= ", +1 ⭐ PROTOTYPE!"
+			end
+			local skinChance = if player == top then BossConfig.Reward.TopDamageSkinChance else BossConfig.Reward.SkinChance
+			if math.random() < skinChance and CosmeticService:GiveSkin(player, BossConfig.Reward.Skin) then
+				text ..= ", and the ULTRA RARE Omega Destroyer robot skin!"
+				Net:NotifyAll(("🎰 %s got the ultra rare Omega Destroyer skin!"):format(player.DisplayName), "special")
 			end
 			Net:Notify(player, "Boss loot: " .. text, "success")
 			Net:Fire(player, "Fx", "Confetti")
@@ -266,18 +278,36 @@ function BossService:Init(services)
 	DataService = services.DataService
 	EconomyService = services.EconomyService
 	CombatService = services.CombatService
+	CosmeticService = services.CosmeticService
 	Net = services.Net
 	workspace:SetAttribute("BossActive", false)
 end
 
+-- Announces the boss, counts down (BossIncomingAt), then spawns it.
+function BossService:Countdown(seconds: number)
+	if boss or (workspace:GetAttribute("BossIncomingAt") or 0) > workspace:GetServerTimeNow() then
+		return false
+	end
+	workspace:SetAttribute("BossIncomingAt", workspace:GetServerTimeNow() + seconds)
+	Net:NotifyAll(("☠️ WARNING: The Omega Destroyer lands in the lobby in %d seconds! Get ready!"):format(seconds), "error")
+	Net:FireAll("Sfx", "Event")
+	task.delay(seconds, function()
+		workspace:SetAttribute("BossIncomingAt", 0)
+		self:Spawn()
+	end)
+	return true
+end
+
 function BossService:Start()
 	task.spawn(function()
-		task.wait(BossConfig.FirstDelay)
+		local nextAt = workspace:GetServerTimeNow() + BossConfig.FirstDelay
 		while true do
+			workspace:SetAttribute("BossNextAt", nextAt)
+			task.wait(math.max(0, nextAt - workspace:GetServerTimeNow() - BossConfig.Warning))
 			if #Players:GetPlayers() > 0 then
-				self:Spawn()
+				self:Countdown(BossConfig.Warning)
 			end
-			task.wait(BossConfig.Interval)
+			nextAt += BossConfig.Interval
 		end
 	end)
 	Players.PlayerRemoving:Connect(function(player)

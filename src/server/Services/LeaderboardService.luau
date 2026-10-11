@@ -12,8 +12,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local LeaderboardConfig = require(Shared.Config.LeaderboardConfig)
 local Format = require(Shared.Util.Format)
+local Time = require(Shared.Util.Time)
 
-local DataService, PlayerService
+local DataService, PlayerService, CosmeticService, Net
 
 local LeaderboardService = {}
 
@@ -112,16 +113,38 @@ local function buildBoard(config, parent)
 		rows[rank] = row
 	end
 
-	local store
+	local store, week
 	if not DataService.IsMock then
-		local ok, result = pcall(DataStoreService.GetOrderedDataStore, DataStoreService, config.Store)
+		week = if config.Weekly then Time.week() else nil
+		local name = if week then config.Store .. "_W" .. week else config.Store
+		local ok, result = pcall(DataStoreService.GetOrderedDataStore, DataStoreService, name)
 		store = ok and result or nil
 	end
 
-	table.insert(boards, { Config = config, Store = store, Rows = rows, Status = status })
+	table.insert(boards, { Config = config, Store = store, Week = week, Rows = rows, Status = status })
+end
+
+local function weeklyStore(config, week)
+	local ok, store = pcall(DataStoreService.GetOrderedDataStore, DataStoreService, config.Store .. "_W" .. week)
+	return if ok then store else nil
+end
+
+-- A player's score for a board right now
+local function scoreFor(board, data)
+	if board.Config.Custom then
+		return 0
+	elseif board.Config.Weekly then
+		return if data.Weekly.Week == Time.week() then math.floor(data.Weekly.Earned) else 0
+	end
+	return math.floor(tonumber(data[board.Config.Stat]) or 0)
 end
 
 local function refresh(board)
+	-- New week: switch the weekly board to a fresh store
+	if board.Config.Weekly and board.Store and board.Week ~= Time.week() then
+		board.Week = Time.week()
+		board.Store = weeklyStore(board.Config, board.Week) or board.Store
+	end
 	if not board.Store then
 		board.Status.Text = "Needs Studio API access / a live server"
 		return
@@ -134,7 +157,9 @@ local function refresh(board)
 		return
 	end
 	local entries = pages:GetCurrentPage()
-	board.Status.Text = "Updates every minute"
+	board.Status.Text = if board.Config.Weekly
+		then ("Resets in %s  •  Top 3 win a title + skin!"):format(Time.format(Time.weekEnds(board.Week) - os.time()))
+		else "Updates every minute"
 	for rank, row in ipairs(board.Rows) do
 		local entry = entries[rank]
 		if entry then
@@ -153,7 +178,7 @@ function LeaderboardService:SaveScores(player: Player)
 		return
 	end
 	for _, board in ipairs(boards) do
-		local value = if board.Config.Custom then 0 else math.floor(tonumber(data[board.Config.Stat]) or 0)
+		local value = scoreFor(board, data)
 		if board.Store and value > 0 then
 			task.spawn(pcall, function()
 				board.Store:SetAsync(tostring(player.UserId), value)
@@ -173,9 +198,60 @@ function LeaderboardService:SetCustomScore(boardId: string, key: string, value: 
 	end
 end
 
+-- Cash earned counts toward this week's board (EconomyService calls this)
+function LeaderboardService:AddWeeklyEarnings(player: Player, amount: number)
+	local data = DataService:GetData(player)
+	if not data or amount <= 0 then
+		return
+	end
+	local week = Time.week()
+	if data.Weekly.Week ~= week then
+		data.Weekly = { Week = week, Earned = 0 }
+	end
+	data.Weekly.Earned += amount
+end
+
+-- Top 3 of a finished week get their prize on their next join
+local function checkWeeklyPrizes(player)
+	local data = DataService:GetData(player)
+	local board
+	for _, candidate in ipairs(boards) do
+		if candidate.Config.Weekly then
+			board = candidate
+		end
+	end
+	if not (data and board and board.Store) then
+		return
+	end
+	local current = Time.week()
+	for week = current - 1, current - LeaderboardConfig.WeeklyLookback, -1 do
+		if not data.WeeklyClaimed[tostring(week)] then
+			local store = weeklyStore(board.Config, week)
+			local ok, pages = pcall(function()
+				return store:GetSortedAsync(false, #LeaderboardConfig.WeeklyPrizes, 1)
+			end)
+			if ok and player.Parent then
+				for rank, entry in ipairs(pages:GetCurrentPage()) do
+					local prize = LeaderboardConfig.WeeklyPrizes[rank]
+					if prize and tonumber(entry.key) == player.UserId then
+						data.WeeklyClaimed[tostring(week)] = true
+						CosmeticService:GiveTitle(player, prize.Title)
+						CosmeticService:GiveSkin(player, prize.Skin)
+						Net:Notify(player, ("🏆 You finished #%d on last week's board! You won the title %s and the Weekly Champion robot skin!"):format(rank, prize.Title), "special")
+						Net:Fire(player, "Fx", "Confetti")
+						Net:Fire(player, "Sfx", "Rebirth")
+					end
+				end
+			end
+		end
+	end
+end
+
 function LeaderboardService:Init(services)
 	DataService = services.DataService
 	PlayerService = services.PlayerService
+	CosmeticService = services.CosmeticService
+	Net = services.Net
 end
 
 function LeaderboardService:Start()
@@ -188,6 +264,7 @@ function LeaderboardService:Start()
 
 	PlayerService.PlayerReady:Connect(function(player)
 		self:SaveScores(player)
+		task.spawn(checkWeeklyPrizes, player)
 	end)
 	Players.PlayerRemoving:Connect(function(player)
 		self:SaveScores(player)

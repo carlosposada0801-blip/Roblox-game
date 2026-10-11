@@ -8,13 +8,14 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local DailyConfig = require(ReplicatedStorage:WaitForChild("Shared").Config.DailyConfig)
+local Time = require(ReplicatedStorage.Shared.Util.Time)
 
 local DataService, EconomyService, PlayerService, Net
 
 local DailyService = {}
 
 local function today()
-	return os.time() // 86400
+	return Time.day()
 end
 
 -- Streak the player would have if they claimed today

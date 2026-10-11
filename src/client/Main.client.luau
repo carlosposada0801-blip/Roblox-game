@@ -26,6 +26,7 @@ local CONTROLLER_ORDER = {
 	"RaidController",
 	"EnvironmentController",
 	"MusicController",
+	"OfferController",
 }
 
 local controllers = {}

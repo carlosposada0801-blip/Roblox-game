@@ -31,4 +31,30 @@ function Format.cash(value: number): string
 	return "$" .. Format.abbreviate(value)
 end
 
+-- Short text for a reward table: "💵 $5K  🤖 3  ⚡ 2x Cash 10m"
+-- (BoostConfig is looked up lazily so Format stays dependency-free.)
+function Format.reward(reward, separator: string?): string
+	local parts = {}
+	if reward.Cash then
+		table.insert(parts, "💵 " .. Format.cash(reward.Cash))
+	end
+	if reward.Robots then
+		table.insert(parts, "🤖 " .. reward.Robots)
+	end
+	if reward.Prototypes then
+		table.insert(parts, "⭐ Rare Prototype")
+	end
+	if reward.Boost then
+		local BoostConfig = require(script.Parent.Parent.Config.BoostConfig)
+		local boost = BoostConfig.Boosts[reward.Boost.Id]
+		if boost then
+			table.insert(parts, ("%s %s %dm"):format(boost.Icon, boost.Name, reward.Boost.Minutes))
+		end
+	end
+	if reward.Skin then
+		table.insert(parts, "🎨 Robot skin")
+	end
+	return table.concat(parts, separator or "  ")
+end
+
 return Format

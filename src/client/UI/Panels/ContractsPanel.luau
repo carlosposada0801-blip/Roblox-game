@@ -18,14 +18,7 @@ local player = Players.LocalPlayer
 local ContractsPanel = {}
 
 local function rewardText(reward)
-	local parts = {}
-	if reward.Cash then
-		table.insert(parts, "💵 " .. Format.cash(reward.Cash) .. "+")
-	end
-	if reward.Robots then
-		table.insert(parts, "🤖 " .. reward.Robots)
-	end
-	return table.concat(parts, "  ")
+	return Format.reward(reward)
 end
 
 function ContractsPanel.build()

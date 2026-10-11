@@ -16,6 +16,8 @@ local SERVICE_ORDER = {
 	"DataService",
 	"PlotService",
 	"EconomyService",
+	"BoostService",
+	"CommunityService",
 	"ContractService",
 	"QuestService",
 	"EventService",
@@ -43,7 +45,10 @@ local SERVICE_ORDER = {
 	"CrewService",
 	"AchievementService",
 	"CosmeticService",
+	"CustomizationService",
 	"TutorialService",
+	"OfferService",
+	"CodeService",
 	"PlayerService", -- keep last: it starts loading players
 }
 

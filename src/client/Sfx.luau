@@ -5,6 +5,7 @@
 ]]
 
 local Debris = game:GetService("Debris")
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local SoundService = game:GetService("SoundService")
 
@@ -24,7 +25,8 @@ end
 
 function Sfx.play(name: string)
 	local definition = SoundConfig.Sounds[name]
-	if not definition then
+	-- Settings > Sound Effects
+	if not definition or Players.LocalPlayer:GetAttribute("Setting_Sfx") == false then
 		return
 	end
 

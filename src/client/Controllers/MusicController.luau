@@ -3,20 +3,24 @@
 	Background music from SceneryConfig.Music.Tracks: shuffled playlist,
 	fades between songs, skips any track that fails to load, and a
 	music on/off button under the side menu. Plays only for this player.
+	On/off is saved (Settings > Music, attribute Setting_Music).
 ]]
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local SoundService = game:GetService("SoundService")
 local TweenService = game:GetService("TweenService")
 
 local SceneryConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("SceneryConfig"))
 local UIKit = require(script.Parent.Parent.UI.UIKit)
+local Net = require(script.Parent.Parent.Net)
 
 local Theme = UIKit.Theme
 local Music = SceneryConfig.Music
 
 local MusicController = {}
 
+local player = Players.LocalPlayer
 local muted = false
 local current
 
@@ -93,13 +97,20 @@ function MusicController:Start()
 		Text = "🔊",
 		Parent = UIKit.root(),
 	}, function()
-		muted = not muted
+		Net.Fire("SetSetting", "Music", muted)
+	end)
+
+	-- The saved setting decides; the button and the Settings window both change it
+	local function applySetting()
+		muted = player:GetAttribute("Setting_Music") == false
 		button.Text = if muted then "🔇" else "🔊"
 		button:SetAttribute("BaseColor", if muted then Theme.Disabled else Theme.Green)
 		if current then
 			fade(current, if muted then 0 else Music.Volume)
 		end
-	end)
+	end
+	player:GetAttributeChangedSignal("Setting_Music"):Connect(applySetting)
+	applySetting()
 
 	task.spawn(function()
 		while true do

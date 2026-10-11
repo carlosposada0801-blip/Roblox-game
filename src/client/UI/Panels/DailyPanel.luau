@@ -19,17 +19,7 @@ local player = Players.LocalPlayer
 local DailyPanel = {}
 
 local function rewardText(reward)
-	local parts = {}
-	if reward.Cash then
-		table.insert(parts, "💵 " .. Format.cash(reward.Cash))
-	end
-	if reward.Robots then
-		table.insert(parts, "🤖 " .. reward.Robots)
-	end
-	if reward.Prototypes then
-		table.insert(parts, "⭐ Prototype")
-	end
-	return table.concat(parts, "\n")
+	return Format.reward(reward, "\n")
 end
 
 function DailyPanel.build()
