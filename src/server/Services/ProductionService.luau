@@ -444,6 +444,7 @@ local function setupCashPad(player, st, pad)
 		local collected = EconomyService:CollectPending(player)
 		if collected > 0 then
 			Net:Fire(player, "CashPopup", collected)
+			Net:Fire(player, "Sfx", "Cash")
 			pulse(pad)
 		end
 	end)

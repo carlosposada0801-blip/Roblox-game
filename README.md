@@ -76,6 +76,7 @@ then Studio → Plugins → Rojo → Connect. `rojo build -o RobotFactoryTycoon.
 | `MonetizationConfig.luau` | Game pass and developer product IDs, names, prices shown, rewards |
 | `ArenaConfig.luau` | Arena size and position, sword and Prototype damage, kill reward |
 | `PlotConfig.luau` | Number of plots, size, layout, colors, lobby spawn |
+| `SoundConfig.luau` | Sound effects (click, purchase, denied, cash, rebirth); swap in your own sound IDs |
 | `SceneryConfig.luau` | Sky, lighting, day/night length, terrain/mountains/lakes/trees, walkway speed, music playlist |
 | `DataConfig.luau` | DataStore name, autosave, session lock timing, new-player save file |
 

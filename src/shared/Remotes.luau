@@ -9,6 +9,7 @@ return {
 	-- server -> client
 	"Notify", -- (text, kind)
 	"CashPopup", -- (amount)
+	"Sfx", -- (soundName) plays a SoundConfig effect
 
 	-- client -> server
 	"RequestRebirth", -- ()

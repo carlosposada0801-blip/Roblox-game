@@ -30,11 +30,19 @@ for _, name in ipairs(SERVICE_ORDER) do
 	services[name] = require(Services[name])
 end
 
-for _, name in ipairs(SERVICE_ORDER) do
+-- Each step is protected, so one broken service can't stop the others from loading.
+local function run(name, method)
 	local service = services[name]
-	if service.Init then
-		service:Init(services)
+	if service[method] then
+		local ok, err = pcall(service[method], service, services)
+		if not ok then
+			warn(("[RobotFactoryTycoon] %s:%s failed: %s"):format(name, method, tostring(err)))
+		end
 	end
+end
+
+for _, name in ipairs(SERVICE_ORDER) do
+	run(name, "Init")
 end
 
 if RunService:IsStudio() then
@@ -42,10 +50,7 @@ if RunService:IsStudio() then
 end
 
 for _, name in ipairs(SERVICE_ORDER) do
-	local service = services[name]
-	if service.Start then
-		service:Start()
-	end
+	run(name, "Start")
 end
 
 print("[RobotFactoryTycoon] Server started")

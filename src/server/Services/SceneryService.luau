@@ -9,6 +9,10 @@
 	    on them). The moving arrows are drawn by the client (WalkwayController).
 	Everything is generated from SceneryConfig using a fixed seed, so the
 	layout is the same on every server.
+
+	Terrain and props are built in the background with frequent task.wait()s.
+	Big terrain fills done in one go would hit Roblox's script timeout and
+	stop the whole server script.
 ]]
 
 local Lighting = game:GetService("Lighting")
@@ -110,12 +114,21 @@ end
 
 -- Terrain --------------------------------------------------------------------
 
-local function buildTerrain()
+-- Flat grass ground with its top at y = 0, filled in tiles so we can yield between them
+local function buildGround()
 	Terrain:Clear()
 
-	-- Flat grass ground with its top at y = 0
 	local size = World.GroundSize
-	Terrain:FillBlock(CFrame.new(0, -6, 0), Vector3.new(size, 12, size), Enum.Material.Grass)
+	local tile = 250
+	for x = -size / 2, size / 2 - tile, tile do
+		for z = -size / 2, size / 2 - tile, tile do
+			Terrain:FillBlock(CFrame.new(x + tile / 2, -6, z + tile / 2), Vector3.new(tile, 12, tile), Enum.Material.Grass)
+			task.wait()
+		end
+	end
+end
+
+local function buildTerrain()
 
 	-- Lakes with a sandy shore
 	for _, lake in ipairs(World.Lakes) do
@@ -130,6 +143,7 @@ local function buildTerrain()
 			Vector3.new(lake.Size.X, depth, lake.Size.Z),
 			Enum.Material.Water
 		)
+		task.wait()
 	end
 	Terrain.WaterColor = World.WaterColor
 	Terrain.WaterTransparency = 0.4
@@ -144,6 +158,7 @@ local function buildTerrain()
 		local x, z = randomOpenPoint(hills.MaxDistance, radius)
 		if x then
 			Terrain:FillBall(Vector3.new(x, -radius * 0.55, z), radius, Enum.Material.Grass)
+			task.wait()
 		end
 	end
 
@@ -157,8 +172,11 @@ local function buildTerrain()
 
 		-- Later fills replace earlier ones: dirt skirt, then rock body, then snow cap
 		Terrain:FillBall(center + Vector3.new(0, -radius * 0.5, 0), radius * 1.15, Enum.Material.Ground)
+		task.wait()
 		Terrain:FillBall(center, radius, Enum.Material.Rock)
+		task.wait()
 		Terrain:FillBall(center + Vector3.new(0, radius * 0.62, 0), radius * 0.38, Enum.Material.Snow)
+		task.wait()
 	end
 end
 
@@ -228,10 +246,13 @@ local function buildProps(folder)
 	local trees = Instance.new("Folder")
 	trees.Name = "Trees"
 	trees.Parent = folder
-	for _ = 1, World.Trees.Count do
+	for index = 1, World.Trees.Count do
 		local x, z = randomOpenPoint(World.Trees.MaxDistance, 8)
 		if x then
 			buildTree(trees, x, z)
+		end
+		if index % 20 == 0 then
+			task.wait()
 		end
 	end
 
@@ -335,12 +356,6 @@ local function buildWalkway(folder)
 end
 
 function SceneryService:Init()
-	-- The Studio Baseplate template's plate would cover the terrain
-	local baseplate = workspace:FindFirstChild("Baseplate")
-	if baseplate then
-		baseplate:Destroy()
-	end
-
 	local existing = workspace:FindFirstChild("Scenery")
 	if existing then
 		existing:Destroy()
@@ -349,13 +364,26 @@ function SceneryService:Init()
 	folder.Name = "Scenery"
 	folder.Parent = workspace
 
-	local started = os.clock()
+	-- Quick parts first, so the lobby works right away
 	setupLighting()
-	buildTerrain()
-	buildProps(folder)
 	buildPlaza(folder)
 	buildWalkway(folder)
-	print(("[SceneryService] World built in %.1fs"):format(os.clock() - started))
+
+	-- Heavy terrain and props in the background
+	task.spawn(function()
+		local started = os.clock()
+		buildGround()
+
+		-- The Studio Baseplate template's plate would cover the terrain
+		local baseplate = workspace:FindFirstChild("Baseplate")
+		if baseplate then
+			baseplate:Destroy()
+		end
+
+		buildTerrain()
+		buildProps(folder)
+		print(("[SceneryService] World built in %.1fs"):format(os.clock() - started))
+	end)
 end
 
 return SceneryService

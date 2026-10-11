@@ -113,6 +113,7 @@ local function hire(player, workerId)
 	EconomyService:AddStat(player, "Robots", -worker.Cost)
 	data.Workers[worker.Id] = count + 1
 	renderWorkers(player)
+	Net:Fire(player, "Sfx", "Purchase")
 	Net:Notify(player, ("Hired a %s! %s"):format(worker.DisplayName, worker.Description), "success")
 end
 

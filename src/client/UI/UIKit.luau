@@ -7,6 +7,8 @@
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 
+local Sfx = require(script.Parent.Parent.Sfx)
+
 local UIKit = {}
 
 UIKit.Theme = {
@@ -160,8 +162,10 @@ function UIKit.button(props, onClick)
 
 	button.Activated:Connect(function()
 		if button:GetAttribute("Disabled") then
+			Sfx.play("Denied")
 			return
 		end
+		Sfx.play("Click")
 		button.BackgroundColor3 = shade(currentColor(), -0.15)
 		tweenTo(currentColor())
 		if onClick then

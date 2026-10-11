@@ -162,6 +162,7 @@ local function requestRebirth(player)
 	task.spawn(DataService.SaveAsync, DataService, player)
 
 	local multiplier = RebirthConfig.GetMultiplier(data.Rebirths)
+	Net:Fire(player, "Sfx", "Rebirth")
 	Net:Notify(player, ("Rebirth %d! Cash is now x%s forever."):format(data.Rebirths, tostring(multiplier)), "special")
 	Net:NotifyAll(("%s rebirthed! (Rebirth %d)"):format(player.DisplayName, data.Rebirths), "info")
 end

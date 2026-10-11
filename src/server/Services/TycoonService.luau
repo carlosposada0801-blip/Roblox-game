@@ -25,7 +25,7 @@ local Signal = require(Shared.Util.Signal)
 local Format = require(Shared.Util.Format)
 local ItemBuilder = require(script.Parent.Parent.Tycoon.ItemBuilder)
 
-local DataService, EconomyService, PlotService, PlayerService
+local DataService, EconomyService, PlotService, PlayerService, Net
 
 local TOUCH_COOLDOWN = 0.75 -- seconds between purchase attempts on one button
 
@@ -198,9 +198,12 @@ local function createButton(player, playerState, item)
 		playerState.LastTouch[item.Id] = now
 
 		local ok, reason = TycoonService:TryPurchase(player, item.Id)
-		if not ok and reason == "TooExpensive" then
+		if ok then
+			Net:Fire(player, "Sfx", "Purchase")
+		elseif reason == "TooExpensive" then
 			-- The client flashes the button red when this changes
 			model:SetAttribute("Denied", (model:GetAttribute("Denied") or 0) + 1)
+			Net:Fire(player, "Sfx", "Denied")
 		end
 	end)
 
@@ -293,6 +296,7 @@ function TycoonService:Init(services)
 	EconomyService = services.EconomyService
 	PlotService = services.PlotService
 	PlayerService = services.PlayerService
+	Net = services.Net
 	validateConfig()
 end
 
