@@ -53,4 +53,5 @@ for _, name in ipairs(SERVICE_ORDER) do
 	run(name, "Start")
 end
 
-print("[RobotFactoryTycoon] Server started")
+local version = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared").Version)
+print("[RobotFactoryTycoon] Server started " .. version)

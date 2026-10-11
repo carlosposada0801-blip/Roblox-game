@@ -82,6 +82,19 @@ function HudController:Start(controllers)
 		}),
 	})
 
+	UIKit.label({
+		Name = "Version",
+		AnchorPoint = Vector2.new(1, 1),
+		Position = UDim2.new(1, -8, 1, -4),
+		Size = UDim2.fromOffset(80, 18),
+		TextColor3 = Theme.SubText,
+		TextTransparency = 0.3,
+		TextXAlignment = Enum.TextXAlignment.Right,
+		MaxTextSize = 14,
+		Text = require(ReplicatedStorage.Shared.Version),
+		Parent = root,
+	})
+
 	local multiplierLabel = makePill(row, 1, Theme.Accent)
 	local rebirthLabel = makePill(row, 2, Theme.Purple)
 	local robotsLabel = makePill(row, 3, Theme.Blue)
