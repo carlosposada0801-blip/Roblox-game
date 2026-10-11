@@ -12,6 +12,14 @@
 	  Button      plot-local position of the buy button (keep each one unique)
 	  Parts       list of part definitions (see below). Can be skipped if you use a template model.
 	  Label       optional: true shows the DisplayName above the built item
+	  GamePass    optional: key from MonetizationConfig.GamePasses. The item has no
+	              button and is built automatically for owners of that pass.
+
+	Behavior (optional)
+	  Dropper   = { Interval = seconds, Value = cash, Stage = "Scrap" }
+	  Conveyor  = { SpeedMultiplier = 1.5 }   the fastest owned conveyor item sets the belt speed
+	  Machine   = { Accepts = { stages }, Output = stage, Multiplier = n, Paint = bool, PartsPerRobot = n }
+	  Collector = {}                          turns items into cash at its "Intake" part
 
 	Part definitions
 	  Any Part property works (Size, Color, Material, Transparency, CanCollide, Shape...).
@@ -22,6 +30,7 @@
 	    "Belt"   conveyor surface that moves items (step 3)
 	    "Intake" collector sensor                  (step 3)
 	    "Zone"   machine sensor that upgrades items (step 4)
+	    "CashPad" the pad the owner steps on to collect cash
 
 	Custom models
 	  Put a Model named after the item's Id in ServerStorage > TycoonItems and it's
@@ -113,6 +122,7 @@ local Items = {
 		Price = 0,
 		Requires = {},
 		Button = Vector3.new(-30, 0, ROW_CONVEYOR),
+		Conveyor = { SpeedMultiplier = 1 },
 		Parts = {
 			{ Name = "Frame", Size = Vector3.new(BELT_END - BELT_START, 1.5, 7), CFrame = at((BELT_START + BELT_END) / 2, 0.75, BELT_Z), Color = DARK_METAL, Material = Enum.Material.Metal },
 			{ Name = "Belt", Size = Vector3.new(BELT_END - BELT_START, 0.2, 6), CFrame = at((BELT_START + BELT_END) / 2, BELT_TOP - 0.1, BELT_Z), Color = Color3.fromRGB(25, 25, 28), Material = Enum.Material.Fabric },
@@ -128,12 +138,15 @@ local Items = {
 		Requires = { "MainConveyor" },
 		Button = Vector3.new(44, 0, ROW_PRODUCTION),
 		Label = true,
+		Collector = {},
 		Parts = {
 			{ Name = "Base", Size = Vector3.new(7, 1, 9), CFrame = at(44.5, 0.5, BELT_Z), Color = DARK_METAL, Material = Enum.Material.Metal },
 			{ Name = "Wall", Size = Vector3.new(1, 4, 9), CFrame = at(47.5, 3, BELT_Z), Color = Color3.fromRGB(60, 200, 90), Material = Enum.Material.Metal },
 			{ Name = "Wall", Size = Vector3.new(6, 4, 1), CFrame = at(44, 3, BELT_Z - 4), Color = Color3.fromRGB(60, 200, 90), Material = Enum.Material.Metal },
 			{ Name = "Wall", Size = Vector3.new(6, 4, 1), CFrame = at(44, 3, BELT_Z + 4), Color = Color3.fromRGB(60, 200, 90), Material = Enum.Material.Metal },
 			{ Name = "Intake", Size = Vector3.new(6, 3, 7), CFrame = at(44, 2.5, BELT_Z), Color = Color3.fromRGB(60, 255, 120), Material = Enum.Material.Neon, Transparency = 0.6, CanCollide = false },
+			{ Name = "CashPadRim", Size = Vector3.new(7, 0.3, 7), CFrame = at(44, 0.15, -6), Color = DARK_METAL, Material = Enum.Material.Metal },
+			{ Name = "CashPad", Size = Vector3.new(6, 0.4, 6), CFrame = at(44, 0.35, -6), Color = Color3.fromRGB(60, 200, 90), Material = Enum.Material.Neon, CanCollide = false },
 		},
 	},
 	{
@@ -143,6 +156,7 @@ local Items = {
 		Price = 0,
 		Requires = { "Collector" },
 		Button = Vector3.new(-42, 0, ROW_PRODUCTION),
+		Dropper = { Interval = 2.5, Value = 4 },
 		Parts = dropper(-42, Color3.fromRGB(150, 110, 70)),
 	},
 
@@ -154,6 +168,7 @@ local Items = {
 		Price = 75,
 		Requires = { "Dropper1" },
 		Button = Vector3.new(-34, 0, ROW_PRODUCTION),
+		Dropper = { Interval = 2.5, Value = 6 },
 		Parts = dropper(-34, Color3.fromRGB(150, 110, 70)),
 	},
 	{
@@ -175,6 +190,7 @@ local Items = {
 		Requires = { "Dropper2" },
 		Button = Vector3.new(-10, 0, ROW_PRODUCTION),
 		Label = true,
+		Machine = { Accepts = { "Scrap" }, Output = "Metal", Multiplier = 2 },
 		Parts = machine(-10, Color3.fromRGB(255, 100, 30)),
 	},
 	{
@@ -196,6 +212,7 @@ local Items = {
 		Price = 500,
 		Requires = { "Smelter" },
 		Button = Vector3.new(-26, 0, ROW_PRODUCTION),
+		Dropper = { Interval = 2, Value = 10 },
 		Parts = dropper(-26, Color3.fromRGB(110, 120, 135)),
 	},
 	{
@@ -205,6 +222,7 @@ local Items = {
 		Price = 750,
 		Requires = { "Dropper3" },
 		Button = Vector3.new(-20, 0, ROW_CONVEYOR),
+		Conveyor = { SpeedMultiplier = 1.5 },
 		Parts = motor(-38, Vector3.new(5, 4, 4), Color3.fromRGB(0, 170, 255)),
 	},
 
@@ -217,6 +235,7 @@ local Items = {
 		Requires = { "Dropper3" },
 		Button = Vector3.new(6, 0, ROW_PRODUCTION),
 		Label = true,
+		Machine = { Accepts = { "Metal" }, Output = "RobotPart", Multiplier = 2.5 },
 		Parts = machine(6, Color3.fromRGB(0, 170, 255)),
 	},
 	{
@@ -241,6 +260,7 @@ local Items = {
 		Requires = { "Assembler" },
 		Button = Vector3.new(20, 0, ROW_PRODUCTION),
 		Label = true,
+		Machine = { Accepts = { "Scrap", "Metal", "RobotPart" }, Paint = true, Multiplier = 1.5 },
 		Parts = machine(20, Color3.fromRGB(255, 80, 200)),
 	},
 	{
@@ -259,6 +279,7 @@ local Items = {
 		Price = 5000,
 		Requires = { "Painter" },
 		Button = Vector3.new(-18, 0, ROW_PRODUCTION),
+		Dropper = { Interval = 1.5, Value = 18 },
 		Parts = dropper(-18, Color3.fromRGB(70, 90, 160)),
 	},
 
@@ -270,6 +291,7 @@ local Items = {
 		Price = 8000,
 		Requires = { "Dropper4", "ConveyorMk2" },
 		Button = Vector3.new(-10, 0, ROW_CONVEYOR),
+		Conveyor = { SpeedMultiplier = 2.25 },
 		Parts = motor(-30, Vector3.new(6, 5, 5), Color3.fromRGB(255, 60, 60)),
 	},
 	{
@@ -280,6 +302,7 @@ local Items = {
 		Requires = { "Painter" },
 		Button = Vector3.new(33, 0, ROW_PRODUCTION),
 		Label = true,
+		Machine = { Accepts = { "RobotPart" }, Output = "Robot", Multiplier = 2, PartsPerRobot = 3 },
 		Parts = machine(33, Color3.fromRGB(255, 215, 0)),
 	},
 	{
@@ -307,6 +330,24 @@ local Items = {
 			{ Name = "Head", Size = Vector3.new(2.5, 2.5, 2.5), CFrame = at(36, 11.25, 34), Color = STEEL, Material = Enum.Material.Metal },
 			{ Name = "Eyes", Size = Vector3.new(1.8, 0.5, 0.2), CFrame = at(36, 11.5, 35.3), Color = Color3.fromRGB(0, 255, 255), Material = Enum.Material.Neon },
 		},
+	},
+
+	-- Game pass items (no button; built automatically for pass owners) -----------
+	{
+		Id = "VIPFloor",
+		DisplayName = "VIP Lounge",
+		Category = "Floor",
+		Price = 0,
+		Requires = {},
+		GamePass = "VIPFloor",
+		-- A golden lounge plus a VIP dropper that drops ready-smelted metal
+		Dropper = { Interval = 2, Value = 30, Stage = "Metal" },
+		Parts = concat(dropper(-2, Color3.fromRGB(255, 200, 40)), {
+			{ Name = "VIPPlatform", Size = Vector3.new(22, 0.4, 20), CFrame = at(-37, 0.2, 36), Color = Color3.fromRGB(255, 200, 40), Material = Enum.Material.Foil },
+			{ Name = "VIPRim", Size = Vector3.new(22.6, 0.3, 20.6), CFrame = at(-37, 0.15, 36), Color = Color3.fromRGB(255, 240, 150), Material = Enum.Material.Neon },
+			{ Name = "VIPThrone", Size = Vector3.new(4, 5, 1), CFrame = at(-37, 2.9, 44), Color = Color3.fromRGB(150, 0, 200), Material = Enum.Material.Fabric },
+			{ Name = "VIPSeat", Size = Vector3.new(4, 1, 3), CFrame = at(-37, 0.9, 42.5), Color = Color3.fromRGB(150, 0, 200), Material = Enum.Material.Fabric },
+		}),
 	},
 }
 

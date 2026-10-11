@@ -11,6 +11,7 @@
 	    Items        unlocked tycoon items        (step 2+)
 	    Buttons      buy buttons                  (step 2+)
 	    Drops        moving scrap / robot parts   (step 3+)
+	    Workers      hired worker bots            (step 6+)
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -167,7 +168,7 @@ local function buildPlot(index, parent)
 		Parent = model,
 	})
 
-	for _, folderName in ipairs({ "Items", "Buttons", "Drops" }) do
+	for _, folderName in ipairs({ "Items", "Buttons", "Drops", "Workers" }) do
 		local folder = Instance.new("Folder")
 		folder.Name = folderName
 		folder.Parent = model
@@ -260,7 +261,7 @@ function PlotService:ReleasePlot(player: Player)
 	plot.Model:SetAttribute("OwnerId", 0)
 	plot.OwnerLabel.Text = PlotConfig.UnclaimedText
 
-	for _, folderName in ipairs({ "Items", "Buttons", "Drops" }) do
+	for _, folderName in ipairs({ "Items", "Buttons", "Drops", "Workers" }) do
 		plot.Model[folderName]:ClearAllChildren()
 	end
 
@@ -281,6 +282,9 @@ function PlotService:TeleportToPlot(player: Player)
 	if not (plot and character) then
 		return
 	end
+
+	-- With streaming enabled, load the area first so the player doesn't fall through
+	pcall(player.RequestStreamAroundAsync, player, plot.SpawnCFrame.Position, 5)
 
 	local root = character:FindFirstChild("HumanoidRootPart") or character:WaitForChild("HumanoidRootPart", 5)
 	-- Let the default spawn finish placing the character first, or it can override our move.

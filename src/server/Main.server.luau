@@ -11,10 +11,16 @@ local RunService = game:GetService("RunService")
 local Services = script.Parent.Services
 
 local SERVICE_ORDER = {
+	"Net",
 	"DataService",
 	"PlotService",
 	"EconomyService",
 	"TycoonService",
+	"WorkerService",
+	"ProductionService",
+	"RebirthService",
+	"MonetizationService",
+	"ArenaService",
 	"PlayerService", -- keep last: it starts loading players
 }
 

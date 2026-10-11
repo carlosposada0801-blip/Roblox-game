@@ -24,13 +24,15 @@ DataConfig.ForceMockInStudio = false
 
 DataConfig.Template = {
 	Cash = 0,
+	PendingCash = 0, -- earned but not yet collected from the cash pad
 	TotalEarned = 0,
 	Rebirths = 0,
-	Unlocked = {}, -- [buttonId] = true                    (step 2)
-	Workers = {}, -- list of hired robot workers           (step 6)
-	RobotsBuilt = 0, --                                    (step 4)
-	Prototypes = 0, --                                     (step 9)
-	ProcessedReceipts = {}, -- [purchaseId] = os.time()    (step 7)
+	Unlocked = {}, -- [itemId] = true
+	Workers = {}, -- [workerId] = number hired
+	Robots = 0, -- robots available to hire workers with
+	RobotsBuilt = 0, -- lifetime robots sold
+	Prototypes = 0, -- Prototype robots owned (arena)
+	ProcessedReceipts = {}, -- [purchaseId] = os.time(), stops double grants
 }
 
 return DataConfig

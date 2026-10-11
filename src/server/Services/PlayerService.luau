@@ -2,7 +2,8 @@
 	PlayerService
 	Runs the join and leave sequence in the right order:
 
-	  join:  load data (session lock) -> claim plot -> leaderstats -> teleport -> PlayerReady
+	  join:  load data (session lock) -> claim plot -> check game passes
+	         -> leaderstats -> teleport -> PlayerReady (tycoon, workers, ...)
 	  leave: release plot -> save and release data
 
 	Later steps hook into PlayerReady to rebuild the player's tycoon.
@@ -13,7 +14,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Signal = require(ReplicatedStorage:WaitForChild("Shared").Util.Signal)
 
-local DataService, PlotService, EconomyService
+local DataService, PlotService, EconomyService, MonetizationService
 
 local PlayerService = {}
 PlayerService.PlayerReady = Signal.new() -- (player, profile, plot)
@@ -27,6 +28,11 @@ local function onPlayerAdded(player: Player)
 	local plot = PlotService:ClaimPlot(player)
 	if not plot then
 		player:Kick("All factories on this server are taken. Please join another server.")
+		return
+	end
+
+	MonetizationService:LoadPasses(player)
+	if player.Parent == nil then
 		return
 	end
 
@@ -53,6 +59,7 @@ function PlayerService:Init(services)
 	DataService = services.DataService
 	PlotService = services.PlotService
 	EconomyService = services.EconomyService
+	MonetizationService = services.MonetizationService
 end
 
 function PlayerService:Start()

@@ -8,6 +8,9 @@
 	    unlock, builds the item, and shows any buttons that are now available.
 	  * When a player joins, everything in their saved Unlocked list is rebuilt
 	    for free, so the tycoon looks exactly like they left it.
+	  * Items with a GamePass field have no button. They are built whenever the
+	    player owns that pass (attribute Pass_<key>, set by MonetizationService).
+	  * ResetTycoon clears every bought item (used by rebirths).
 
 	Later steps listen to ItemUnlocked to give items behavior (droppers,
 	conveyors, machines...).
@@ -28,6 +31,7 @@ local TOUCH_COOLDOWN = 0.75 -- seconds between purchase attempts on one button
 
 local TycoonService = {}
 TycoonService.ItemUnlocked = Signal.new() -- (player, plot, item, model, isRebuild)
+TycoonService.TycoonReset = Signal.new() -- (player, plot)
 
 local items = {} -- valid config entries, in config order
 local itemsById = {}
@@ -46,7 +50,7 @@ local function validateConfig()
 			problem = "duplicate Id"
 		elseif type(item.Price) ~= "number" or item.Price < 0 then
 			problem = "Price must be a number >= 0"
-		elseif typeof(item.Button) ~= "Vector3" then
+		elseif typeof(item.Button) ~= "Vector3" and not item.GamePass then
 			problem = "Button must be a Vector3"
 		end
 
@@ -57,11 +61,13 @@ local function validateConfig()
 			itemsById[item.Id] = item
 			table.insert(items, item)
 
-			local spot = tostring(item.Button)
-			if buttonSpots[spot] then
-				warn(("[ItemConfig] %s and %s use the same Button position"):format(buttonSpots[spot], item.Id))
+			if item.Button then
+				local spot = tostring(item.Button)
+				if buttonSpots[spot] then
+					warn(("[ItemConfig] %s and %s use the same Button position"):format(buttonSpots[spot], item.Id))
+				end
+				buttonSpots[spot] = item.Id
 			end
-			buttonSpots[spot] = item.Id
 		end
 	end
 
@@ -108,8 +114,9 @@ local function requirementsMet(data, item)
 	return true
 end
 
+-- Can this item be bought with cash right now?
 local function isAvailable(data, item)
-	return not data.Unlocked[item.Id] and requirementsMet(data, item)
+	return not item.GamePass and not data.Unlocked[item.Id] and requirementsMet(data, item)
 end
 
 local function makeText(parent, text, position, size, color)
@@ -223,7 +230,10 @@ local function unlock(player, item, isRebuild)
 		return
 	end
 
-	data.Unlocked[item.Id] = true
+	-- Pass items are never saved: owning the pass is what builds them.
+	if not item.GamePass then
+		data.Unlocked[item.Id] = true
+	end
 
 	local button = playerState.Buttons[item.Id]
 	if button then
@@ -233,6 +243,23 @@ local function unlock(player, item, isRebuild)
 
 	local model = ItemBuilder.build(item, playerState.Plot)
 	TycoonService.ItemUnlocked:Fire(player, playerState.Plot, item, model, isRebuild)
+end
+
+-- Builds pass items the player owns that aren't built yet.
+local function buildPassItems(player)
+	local playerState = state[player]
+	if not playerState then
+		return
+	end
+	for _, item in ipairs(items) do
+		if
+			item.GamePass
+			and player:GetAttribute("Pass_" .. item.GamePass)
+			and not playerState.Plot.Model.Items:FindFirstChild(item.Id)
+		then
+			unlock(player, item, true)
+		end
+	end
 end
 
 -- Player setup / teardown --------------------------------------------------
@@ -248,12 +275,13 @@ local function setupPlayer(player, _profile, plot)
 	-- Rebuild owned items in config order
 	local rebuilt = 0
 	for _, item in ipairs(items) do
-		if data.Unlocked[item.Id] then
+		if data.Unlocked[item.Id] and not item.GamePass then
 			unlock(player, item, true)
 			rebuilt += 1
 		end
 	end
 
+	buildPassItems(player)
 	refreshButtons(player)
 	print(("[TycoonService] Rebuilt %d item(s) for %s"):format(rebuilt, player.Name))
 end
@@ -326,6 +354,34 @@ function TycoonService:GetAvailableItems(player: Player)
 		return a.Price < b.Price
 	end)
 	return available
+end
+
+-- Builds any pass items after a game pass purchase.
+function TycoonService:RefreshPassItems(player: Player)
+	buildPassItems(player)
+end
+
+-- Removes every bought item and button and starts the plot over (rebirth).
+function TycoonService:ResetTycoon(player: Player)
+	local playerState = state[player]
+	local data = DataService:GetData(player)
+	if not (playerState and data) then
+		return
+	end
+
+	data.Unlocked = {}
+	playerState.Buttons = {}
+	playerState.LastTouch = {}
+
+	local plotModel = playerState.Plot.Model
+	plotModel.Items:ClearAllChildren()
+	plotModel.Buttons:ClearAllChildren()
+	plotModel.Drops:ClearAllChildren()
+
+	self.TycoonReset:Fire(player, playerState.Plot)
+
+	buildPassItems(player)
+	refreshButtons(player)
 end
 
 function TycoonService:GetItem(itemId: string)

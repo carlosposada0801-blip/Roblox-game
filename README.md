@@ -1,215 +1,207 @@
 # Robot Factory Tycoon
 
-A Roblox tycoon written in Luau and synced into Studio with [Rojo](https://rojo.space).
-Players claim a factory plot, buy droppers, conveyors and machines that turn scrap into
-robots, hire those robots as workers, and rebirth for permanent multipliers.
-
-## Build progress
+A Roblox tycoon written in Luau. Claim a factory plot, buy droppers, conveyors and machines
+that turn scrap into robots, hire those robots as workers, rebirth for permanent multipliers,
+and take your rare Prototype robots into a shared PvP arena.
 
 | Step | Feature | Status |
 |---|---|---|
-| 1 | Plots and data saving (session-locked DataStore) | ✅ Done |
-| 2 | Buy buttons and unlocking | ✅ Done |
-| 3 | Droppers, conveyors, collector | ⏳ Next |
-| 4 | Machines that upgrade value | |
-| 5 | Rebirths and leaderboard | |
-| 6 | Robot workers | |
-| 7 | Monetization (game passes, dev products, ProcessReceipt) | |
-| 8 | UI polish | |
-| 9 | Prototype PvP arena | |
+| 1 | Plots and session-locked data saving | ✅ |
+| 2 | Buy buttons and unlocking | ✅ |
+| 3 | Droppers, conveyors, collector, cash pad | ✅ |
+| 4 | Machines that upgrade value (Smelter, Assembler, Painter, Final Assembly) | ✅ |
+| 5 | Rebirths, leaderstats, global Top Rebirths board | ✅ |
+| 6 | Robot workers | ✅ |
+| 7 | Game passes, developer products, safe ProcessReceipt | ✅ |
+| 8 | UI: HUD, rebirth confirm, workers menu, shop, notifications | ✅ |
+| 9 | Prototype robots and PvP arena | ✅ |
 
 ---
 
-## One-time setup
+## Opening the game
 
-1. **Install Rokit** (the Roblox toolchain manager): https://github.com/rojo-rbx/rokit#installation
-2. In this folder, run:
-   ```sh
-   rokit install
-   ```
-   This installs the Rojo version pinned in `rokit.toml` (7.4.4).
-   *Already use Aftman? Copy the `[tools]` line into `aftman.toml` and run `aftman install`.*
-3. **Install the Rojo Studio plugin**:
-   ```sh
-   rojo plugin install
-   ```
-   You can also get "Rojo" from the Creator Store inside Studio. Restart Studio afterwards.
-4. Recommended: VS Code with the **Luau Language Server** extension (JohnnyMorganz.luau-lsp).
+**Easiest:** open `RobotFactoryTycoon.rbxlx` in Roblox Studio and press **Play**.
 
-## Syncing with Rojo
+**To make saving work:**
+1. File → Publish to Roblox.
+2. Home → Game Settings → Security → turn on **Enable Studio Access to API Services**.
 
-1. Open Studio and create a new place from the **Baseplate** template.
-2. **Publish it** (File → Publish to Roblox). DataStores only work in published places.
-3. Turn on **Game Settings → Security → Enable Studio Access to API Services**.
-   Without it the game still runs, but it uses an in-memory store and nothing persists
-   between play tests. The Output window warns you when that happens.
-4. In a terminal in this folder:
-   ```sh
-   rojo serve
-   ```
-5. In Studio: **Plugins → Rojo → Connect**. The code appears in:
-   - `ReplicatedStorage.Shared`: configs and utilities (both sides)
-   - `ServerScriptService.Server`: server services
-   - `StarterPlayer.StarterPlayerScripts.Client`: client controllers
-6. Edit files in your editor and Rojo pushes the changes into Studio live.
-   **Stop the play test before saving files.** Rojo syncs into edit mode, not into a running test.
-7. Save the place (Ctrl+S) now and then, so Studio-only settings like the published
-   place and API access are kept.
+Until then the game runs with an in-memory save, and the Output window warns about it.
 
-If you'd rather not run a live server, `rojo build -o RobotFactoryTycoon.rbxlx` builds a place file you can open directly.
+**Before going live:**
+- Set **Server Size = 6** (Creator Dashboard → your experience → Places), so there's one
+  plot per player.
+- Create the game passes and developer products and paste their IDs into
+  `ReplicatedStorage > Shared > Config > MonetizationConfig` (see Monetization below).
 
-## Project layout
-
-```
-default.project.json         Rojo mapping: folders -> Roblox services
-rokit.toml                   Pinned Rojo version
-src/
-  shared/                    -> ReplicatedStorage.Shared
-    Config/                  ALL tunable data lives here (prices, plots, saves...)
-      PlotConfig.luau        Plot count, size, layout, colors
-      ItemConfig.luau        Every buy button: price, unlock order, position, looks
-      DataConfig.luau        DataStore name, autosave, lock timing, new-player template
-    Util/
-      Signal.luau            Tiny event class for services
-      Format.luau            1234 -> "1.23K"
-  server/                    -> ServerScriptService.Server
-    Main.server.luau         Boots services (Init, then Start)
-    Services/
-      DataService.luau       Session-locked load/save, autosave, BindToClose
-      PlotService.luau       Generates the 6 plots, claim/release, teleport
-      EconomyService.luau    The ONLY place cash changes (server-authoritative)
-      PlayerService.luau     Join/leave order: data -> plot -> leaderstats -> ready
-      TycoonService.luau     Buy buttons, purchases, rebuilding owned items on join
-    Tycoon/
-      ItemBuilder.luau       Builds an item from config parts or a custom model
-    Dev/
-      DevCommands.luau       Studio-only chat commands for testing
-  client/                    -> StarterPlayerScripts.Client
-    Main.client.luau         Starts controllers
-    Controllers/
-      HudController.luau     Basic cash/plot display
-      ButtonController.luau  Tints your buttons green/red by affordability
-```
-
-### How data saving works
-
-Each player's DataStore entry looks like `{ Data = {...}, Lock = { JobId, Time } }`.
-
-- **Join:** `UpdateAsync` claims the lock. If another live server holds it (for example,
-  you just hopped servers), the load waits and retries. A lock that hasn't been refreshed
-  for `LockExpireSeconds` is treated as a dead server and taken over. The final retry
-  takes it over regardless.
-- **Autosave (every 60s):** saves the data and refreshes the lock.
-- **Every save checks the lock first.** If another server owns it now, this server stops
-  saving and kicks the player, so stale data can't overwrite newer data.
-- **Leave / shutdown:** saves and clears the lock. `BindToClose` waits for every save to finish.
-- **New fields:** anything you add to `DataConfig.Template` is filled in automatically for
-  existing players the next time they load.
-- **Saved now:** `Cash`, `TotalEarned`, `Rebirths`, `Unlocked`, `Workers`, `RobotsBuilt`,
-  `Prototypes`, `ProcessedReceipts`. Later steps use these fields.
+### Optional: live-sync with Rojo
+If you edit code in VS Code instead of Studio: `rokit install`, `rojo plugin install`, `rojo serve`,
+then Studio → Plugins → Rojo → Connect. `rojo build -o RobotFactoryTycoon.rbxlx` rebuilds the place file.
 
 ---
 
-## Testing step 1: plots and data saving
+## How the game plays
 
-**Studio dev commands** (type in chat; they only exist in Studio):
+1. **Join.** You're given one of 6 plots and teleported onto it. Your name appears on its gate.
+2. **Build.** Step on green buy buttons. A button turns red when you can't afford it.
+   Free starter set: Conveyor Belt → Collector → Scrap Dropper.
+3. **Produce.** Droppers drop **Scrap** onto the belt, and machines upgrade it as it passes:
+   - **Smelter:** Scrap → Metal (x2)
+   - **Assembler:** Metal → Robot Part (x2.5)
+   - **Painter:** random color (x1.5)
+   - **Final Assembly:** every 3 Robot Parts → 1 **Robot** (sum x2)
+4. **Earn.** The collector sells items into the **cash pad** in front of it. Step on the pad to
+   collect, or buy the Auto-Collect pass.
+5. **Workers.** Each robot sold adds +1 to your robot count. Spend robots in the **Workers** menu
+   on bots that speed up droppers or boost machine value. Hired bots appear on your plot.
+6. **Prototypes.** Each robot has a 1% chance to be a glowing ★ PROTOTYPE ★ worth 10x. Collecting
+   one adds a Prototype to your account.
+7. **Rebirth.** The **Rebirth** menu resets your cash and items for a permanent cash multiplier
+   (+0.5x per rebirth). You keep workers, robots, Prototypes and passes. Rebirths show in the
+   player list and on the **Top Rebirths** board in the lobby.
+8. **Arena.** The purple portal in the lobby leads to the floating PvP arena. Everyone gets a
+   Robo Sword. If you own a Prototype, **Deploy** it: it follows you and zaps enemies.
+   Kills pay cash. Leave through the blue portal or the Leave button.
 
-| Command | Effect |
+---
+
+## Configuration: everything tunable lives in `src/shared/Config/`
+
+| File | What you change there |
 |---|---|
-| `/cash 500` | Add $500 (default is 1000) |
-| `/save` | Force a save now |
-| `/unlockall` | Unlock every tycoon item for free (step 2+) |
-| `/wipe` | Reset your data to a new player's and kick you |
-| `/help` | List the commands |
+| `ItemConfig.luau` | Every buy button: price, unlock order (`Requires`), position, looks, dropper rates, machine effects |
+| `ProductionConfig.luau` | Belt speed, max items per plot, cleanup time, item looks per stage, Prototype chance |
+| `RebirthConfig.luau` | Rebirth cost and growth, multiplier per rebirth, leaderboard settings |
+| `WorkerConfig.luau` | Worker bots: robot cost, effect, max count (slots) |
+| `MonetizationConfig.luau` | Game pass and developer product IDs, names, prices shown, rewards |
+| `ArenaConfig.luau` | Arena size and position, sword and Prototype damage, kill reward |
+| `PlotConfig.luau` | Number of plots, size, layout, colors |
+| `DataConfig.luau` | DataStore name, autosave, session lock timing, new-player save file |
 
-### Checklist
-
-1. **Plots appear.** Press **Play**. Six plots with colored neon borders sit in two rows of
-   three, facing a central aisle. Each has a gate reading "Unclaimed Factory".
-2. **You claim a plot.** Your gate changes to "*YourName*'s Robot Factory" and you're
-   teleported onto your plot. Output shows `[PlayerService] <name> loaded into plot 1`.
-   The bottom-left HUD shows "Your factory: Plot 1" and `$0`.
-3. **Cash is server-side.** Type `/cash 2500`. The HUD and the player-list `Cash` column
-   both show `$2.5K`.
-4. **Data persists.** Press **Stop**, then **Play** again. Your cash is still 2500.
-   (If you see the "DataStores unavailable" warning, re-check setup steps 2 and 3.)
-5. **Respawn returns you home.** Reset your character (Esc → Reset). You respawn on your plot.
-6. **Multiple players get separate plots.** Go to **Test → Clients and Servers**, choose
-   3 players, and click **Start**. Each player gets a different plot and gate name. Close
-   one client: that plot goes back to "Unclaimed Factory".
-7. **Wipe works.** `/wipe` kicks you. Press Play again and you're back at $0.
-
-### Notes
-
-- Set the server size to **6** (Creator Dashboard → your experience → Places → Server Size)
-  so a server never has more players than plots. A 7th player would be kicked with a
-  friendly message.
-- `DataConfig.ForceMockInStudio = true` makes Studio tests start fresh every time without
-  touching real saves.
-- Changing `DataConfig.StoreName` (for example, `_v1` → `_v2`) starts every player over.
-- Session locking can't be tested in Studio, because it needs two live servers. The logic
-  was unit-tested outside Roblox with a simulated shared DataStore covering takeover,
-  stale-server kick, release and reconcile.
-
----
-
-## Updating your local copy
-
-Each step is pushed to GitHub. If you downloaded the ZIP:
-
-1. In the Terminal window running `rojo serve`, press **Ctrl+C** to stop it.
-2. Move the old project folder to the Trash.
-3. Download the new ZIP:
-   https://github.com/carlosposada0801-blip/Roblox-game/archive/refs/heads/claude/inspiring-hypatia-06fx4v.zip
-   and unzip it in the same place.
-4. `cd` into the new folder and run `rojo serve` again.
-5. In Studio: **Plugins → Rojo → Connect** again.
-
----
-
-## Testing step 2: buy buttons and unlocking
-
-### Adding or changing items
-
-Open `src/shared/Config/ItemConfig.luau`. Each entry is one buy button:
+**Adding a buy button** is one entry in `ItemConfig.Items`. No logic changes:
 
 ```lua
 {
-	Id = "Dropper2",                 -- save key: never rename once players own it
-	DisplayName = "Scrap Dropper II",
+	Id = "Dropper5",                       -- save key: never rename once players own it
+	DisplayName = "Mega Dropper",
 	Category = "Dropper",
-	Price = 75,
-	Requires = { "Dropper1" },       -- button appears once these are owned
-	Button = Vector3.new(-34, 0, -8), -- where the button sits on the plot
-	Parts = dropper(-34, Color3.fromRGB(150, 110, 70)),
+	Price = 40000,
+	Requires = { "FinalAssembly" },        -- button appears once these are owned
+	Button = Vector3.new(0, 0, 28),        -- where the button sits on the plot
+	Dropper = { Interval = 1, Value = 40 },
+	Parts = { ... },                       -- needs a part named "Spout"; or use a custom model (below)
 },
 ```
 
-Prices, order and positions are data only. TycoonService never needs editing to add
-an item. On startup the server warns in Output about duplicate Ids, unknown
-`Requires`, items that can never unlock, and buttons sharing a spot.
+On startup the server warns in Output about duplicate Ids, unknown `Requires`, items that can
+never unlock, and buttons that share a spot.
 
 **Custom models:** build a Model in Studio, name it after the item's `Id`, and put it in
-`ServerStorage > TycoonItems` (create that folder). It's used instead of `Parts`.
-Its pivot is placed at the plot center unless the entry sets `Pivot = CFrame.new(...)`.
+`ServerStorage > TycoonItems`. It's used instead of `Parts`. Keep the special part names:
+`Spout` (droppers), `Belt` (conveyors), `Zone` (machines), `Intake` and `CashPad` (collector).
 
-### Checklist
+---
 
-1. **Starter button.** Press Play. One green **Conveyor Belt — FREE** button sits on your plot.
-2. **Free starter chain.** Step on it: the conveyor belt appears and a **Collector — FREE**
-   button appears at the right end. Buy it, and a free **Scrap Dropper** appears. Buy that too.
-3. **Price and color.** The next button, **Scrap Dropper II**, costs $75. With $0 it is
-   **red**. Stepping on it flashes it and nothing is bought.
-4. **Buying with cash.** Type `/cash 100`. The button turns **green**. Step on it: $75 is
-   taken and the second dropper appears.
-5. **Branching.** After Dropper II, two buttons appear: **Factory Floor** and **Smelter**.
-6. **Only the owner can buy.** In Test → Clients and Servers with 2 players, walk Player 2
-   onto Player 1's button. Nothing happens.
-7. **Rebuild on rejoin.** Stop and Play again (with API access on). Every item you bought is
-   rebuilt and the right buttons are showing. Output says
-   `[TycoonService] Rebuilt N item(s) for <name>`.
-8. **The whole factory.** `/unlockall` builds everything: 4 droppers, belt, 2 motors,
-   4 machines (labeled), collector, walls, floors, lamps, and the statue.
-9. **Clean slate.** `/wipe` resets you to an empty plot.
+## Monetization
 
-Droppers, belts and machines are only visual in this step. They start working in steps 3 and 4.
+| Game pass | Effect |
+|---|---|
+| 2x Cash | Collector earnings x2 |
+| Auto-Collect | Cash skips the pad and goes straight to you |
+| Faster Conveyors | Belts move 50% faster |
+| VIP Floor | Golden VIP lounge plus a VIP dropper that drops pre-smelted metal |
+
+| Developer product | Effect |
+|---|---|
+| Cash Pack / Crate / Vault | $5K / $30K / $200K, times your rebirth multiplier |
+| Instant Upgrade | Unlocks your cheapest available item (gives cash if everything is owned) |
+| Prototype Robot | +1 Prototype for the arena |
+
+**Going live:** Creator Dashboard → your experience → Monetization → create each pass and
+product → paste the IDs into `MonetizationConfig` (replacing the `0`s).
+
+**While an ID is 0**, buying it in Studio simulates the purchase through the real grant code,
+so you can test the whole shop now. In a live server it says "isn't on sale yet".
+
+**Why purchases are never lost or doubled (`MonetizationService`):**
+- The player isn't in this server, or their data hasn't loaded → `NotProcessedYet`.
+  Roblox retries later.
+- The `PurchaseId` is already recorded in their save → `PurchaseGranted`, with no second grant.
+- Otherwise the reward is granted and the `PurchaseId` recorded in the same save data, then
+  saved. `PurchaseGranted` is returned only if that save succeeds. If it fails, Roblox retries,
+  and the in-memory record stops a double grant.
+- The session lock means no other server can be editing that save at the same time.
+
+---
+
+## Architecture
+
+```
+src/shared/  -> ReplicatedStorage.Shared   configs, Remotes list, utilities
+src/server/  -> ServerScriptService.Server
+  Main.server.luau        boots services: Init in order, then Start
+  Services/
+    Net                   RemoteEvents + per-player rate limiting + pcall-wrapped handlers
+    DataService           session-locked DataStore (UpdateAsync), autosave, BindToClose
+    PlotService           builds 6 plots, claim/release, teleport home
+    EconomyService        the ONLY place cash/stats change; leaderstats + attributes mirror
+    TycoonService         buy buttons, purchases, rebuild on join, reset on rebirth, pass items
+    ProductionService     droppers, belts, machines, collector, cash pad, lag limits
+    WorkerService         hire/dismiss bots, dropper speed and machine value bonuses
+    RebirthService        rebirth requests + OrderedDataStore Top Rebirths board
+    MonetizationService   passes, products, ProcessReceipt
+    ArenaService          arena, Robo Sword, Prototype companions, kill rewards
+    PlayerService         join/leave order: data -> plot -> passes -> leaderstats -> ready
+  Tycoon/ItemBuilder      builds items from config parts or custom models
+  Util/RateLimiter        token bucket
+  Dev/DevCommands         Studio-only chat commands
+src/client/  -> StarterPlayerScripts.Client
+  Controllers/            HUD, notifications, buy-button tint, menus, arena bar
+  UI/UIKit, UI/Panels/    shared look + Rebirth / Workers / Shop windows
+```
+
+**Server-authoritative:** the client only sends requests (`RequestRebirth`, `HireWorker`,
+`DismissWorker`, `RequestPurchase`, `ArenaAction`). Every request is rate limited and
+re-validated on the server. Item values live in server-side records, item parts are owned
+by the server, and buy buttons and cash pads are server touch handlers.
+
+**Lag control:** at most 60 items per plot (droppers pause at the cap). Every item gets a
+90-second Debris lifetime, items that fall off the plot are destroyed, and one 20 Hz
+loop handles all plots.
+
+---
+
+## Testing in Studio
+
+**Dev chat commands** (Studio only):
+
+| Command | Effect |
+|---|---|
+| `/cash 5000` | Add cash |
+| `/robots 20` | Add robots for hiring workers |
+| `/unlockall` | Buy every item for free |
+| `/prototype` | The next robot built is a Prototype |
+| `/pass DoubleCash` | Grant a pass (`DoubleCash`, `AutoCollect`, `FasterConveyors`, `VIPFloor`) |
+| `/buy SmallCash` | Run a product through the receipt code (`SmallCash`, `MediumCash`, `LargeCash`, `NextUpgrade`, `Prototype`) |
+| `/save` | Save now |
+| `/wipe` | Reset your save and kick you |
+
+**Checklist:**
+1. **Production.** Buy the 3 free buttons. Scrap drops, rides the belt into the collector,
+   and the cash pad shows `$`. Step on the pad: cash goes up with a `+$` popup.
+2. **Machines.** `/cash 20000`, then buy the Smelter, Assembler, Painter and Final Assembly
+   as they appear. Scrap turns into metal ingots, then blue parts, then gets painted, and
+   every 3 parts become a robot.
+3. **Workers.** `/robots 20` → Workers menu → Hire. Bots appear behind the belt, and droppers
+   speed up or values rise.
+4. **Rebirth.** `/cash 100000` → Rebirth menu → Rebirth → confirm. The plot resets, the HUD
+   shows x1.5 cash, and the Rebirths column goes up.
+5. **Shop.** Shop → buy any pass or product. It's simulated in Studio and takes effect
+   immediately (try VIP Floor).
+6. **Arena.** `/prototype` and wait for a robot (or `/buy Prototype`), then walk into the
+   purple portal in the lobby and click Deploy. Test fighting with 2 players:
+   Test → Clients and Servers → 2 players.
+7. **Saving.** With API access on, stop and play again. Cash, items, workers and rebirths
+   all come back.
+8. **Lag.** Leave it running a few minutes. The `Drops` folder in each plot stays at 60
+   items or fewer.
