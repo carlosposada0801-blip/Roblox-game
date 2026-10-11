@@ -132,10 +132,11 @@ local function buildArena()
 		Material = Enum.Material.Neon,
 		CanCollide = false,
 	}, folder)
-	for _, z in ipairs({ -5.5, 5.5 }) do
-		part({ Size = Vector3.new(1.5, 12, 1.5), CFrame = CFrame.new(lobby + Vector3.new(0, 6, z)), Color = Color3.fromRGB(45, 47, 52), Material = Enum.Material.Metal }, folder)
+	-- Arch opens toward the walkway (+Z / -Z)
+	for _, x in ipairs({ -5.5, 5.5 }) do
+		part({ Size = Vector3.new(1.5, 12, 1.5), CFrame = CFrame.new(lobby + Vector3.new(x, 6, 0)), Color = Color3.fromRGB(45, 47, 52), Material = Enum.Material.Metal }, folder)
 	end
-	part({ Size = Vector3.new(1.5, 1.5, 12.5), CFrame = CFrame.new(lobby + Vector3.new(0, 12.5, 0)), Color = Color3.fromRGB(150, 60, 255), Material = Enum.Material.Neon }, folder)
+	part({ Size = Vector3.new(12.5, 1.5, 1.5), CFrame = CFrame.new(lobby + Vector3.new(0, 12.5, 0)), Color = Color3.fromRGB(150, 60, 255), Material = Enum.Material.Neon }, folder)
 	addSign(entryPad, "⚔️ PvP ARENA ⚔️", Color3.fromRGB(220, 160, 255), 15)
 
 	return entryPad, exitPad

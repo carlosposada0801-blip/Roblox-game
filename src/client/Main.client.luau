@@ -11,6 +11,9 @@ local CONTROLLER_ORDER = {
 	"ButtonController",
 	"MenuController",
 	"ArenaController",
+	"EnvironmentController",
+	"WalkwayController",
+	"MusicController",
 }
 
 local controllers = {}

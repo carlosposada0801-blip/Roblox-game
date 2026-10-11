@@ -187,31 +187,22 @@ local function buildPlot(index, parent)
 	}
 end
 
-local function ensureGroundAndLobby()
-	-- Works in both the Baseplate template and a completely empty place.
-	if not workspace:FindFirstChild("Baseplate") and not workspace:FindFirstChild("FactoryGround") then
-		makePart({
-			Name = "FactoryGround",
-			Size = Vector3.new(1024, 4, 1024),
-			CFrame = CFrame.new(PlotConfig.Origin - Vector3.new(0, 2, 0)),
-			Color = Color3.fromRGB(90, 140, 80),
-			Material = Enum.Material.Grass,
-			Parent = workspace,
-		})
-	end
-
-	if not workspace:FindFirstChildWhichIsA("SpawnLocation", true) then
-		local spawnLocation = Instance.new("SpawnLocation")
+-- The ground and scenery come from SceneryService. This only makes sure
+-- there's a lobby spawn, and moves the template's spawn off the walkway.
+local function ensureLobbySpawn()
+	local spawnLocation = workspace:FindFirstChildWhichIsA("SpawnLocation", true)
+	if not spawnLocation then
+		spawnLocation = Instance.new("SpawnLocation")
 		spawnLocation.Name = "LobbySpawn"
 		spawnLocation.Anchored = true
 		spawnLocation.Size = Vector3.new(12, 1, 12)
-		spawnLocation.CFrame = CFrame.new(PlotConfig.Origin + Vector3.new(0, 0.5, 0))
 		spawnLocation.Parent = workspace
 	end
+	spawnLocation.CFrame = CFrame.new(PlotConfig.LobbySpawn)
 end
 
 function PlotService:Init()
-	ensureGroundAndLobby()
+	ensureLobbySpawn()
 
 	-- Plots are generated at runtime; remove any copy left in the place file.
 	local existing = workspace:FindFirstChild("Plots")

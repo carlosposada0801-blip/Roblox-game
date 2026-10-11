@@ -75,7 +75,8 @@ then Studio → Plugins → Rojo → Connect. `rojo build -o RobotFactoryTycoon.
 | `WorkerConfig.luau` | Worker bots: robot cost, effect, max count (slots) |
 | `MonetizationConfig.luau` | Game pass and developer product IDs, names, prices shown, rewards |
 | `ArenaConfig.luau` | Arena size and position, sword and Prototype damage, kill reward |
-| `PlotConfig.luau` | Number of plots, size, layout, colors |
+| `PlotConfig.luau` | Number of plots, size, layout, colors, lobby spawn |
+| `SceneryConfig.luau` | Sky, lighting, day/night length, terrain/mountains/lakes/trees, walkway speed, music playlist |
 | `DataConfig.luau` | DataStore name, autosave, session lock timing, new-player save file |
 
 **Adding a buy button** is one entry in `ItemConfig.Items`. No logic changes:
@@ -99,6 +100,40 @@ never unlock, and buttons that share a spot.
 **Custom models:** build a Model in Studio, name it after the item's `Id`, and put it in
 `ServerStorage > TycoonItems`. It's used instead of `Parts`. Keep the special part names:
 `Spout` (droppers), `Belt` (conveyors), `Zone` (machines), `Intake` and `CashPad` (collector).
+
+---
+
+## World, sky and music
+
+`SceneryService` builds the world when the server starts, from `SceneryConfig`:
+- **Sky:** golden-hour start with a pink and purple Atmosphere haze, clouds, bloom, sun rays
+  and color grading. A day/night cycle (16 minutes by default) shows 5,000 stars at night,
+  when the street lamps and neon glow. You can add a custom skybox via `Sky.Skybox`.
+- **World:** terrain grass, rolling hills, two sandy lakes, a ring of snow-capped mountains,
+  160 trees (some pine, cherry-blossom and autumn) and rocks. The plots and lobby stay flat.
+  Change `Seed` for a different layout.
+- **Speedy walkway:** two lanes down the middle of the lobby aisle. The blue lane goes one way
+  and the orange lane goes back, at twice walking speed, with glowing arrows sliding along.
+  Speed is `Walkway.Speed`.
+
+### Adding music
+
+Use only audio you're allowed to use: tracks uploaded by **Roblox** in the Creator Store
+(licensed for use in Roblox experiences) or audio you uploaded yourself.
+
+1. In Studio: **View → Toolbox**, then open the **Creator Store** tab and choose **Audio**.
+2. Search a mood, like `upbeat`, `electronic`, `chill` or `factory`. Check that the creator is
+   **Roblox**, and press play to preview.
+3. Right-click the track → **Copy Asset ID**.
+4. Open `ReplicatedStorage > Shared > Config > SceneryConfig`, find `Music.Tracks`, and add:
+   ```lua
+   Tracks = {
+   	{ Id = 1234567890, Name = "Upbeat Factory" },
+   	{ Id = 2345678901, Name = "Chill Robots" },
+   },
+   ```
+5. Press Play. A 🔊 **Music** button appears under the side menu so players can mute.
+   Tracks that fail to load are skipped, with a warning in Output.
 
 ---
 

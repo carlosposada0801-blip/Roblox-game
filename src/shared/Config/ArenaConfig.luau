@@ -10,7 +10,7 @@ local ArenaConfig = {}
 ArenaConfig.Center = Vector3.new(0, 400, 0) -- floor surface center
 ArenaConfig.Size = Vector3.new(140, 2, 140)
 ArenaConfig.WallHeight = 14
-ArenaConfig.LobbyPortal = Vector3.new(24, 0, 0) -- world position of the entry portal
+ArenaConfig.LobbyPortal = Vector3.new(0, 0, -20) -- world position of the entry portal (beside the walkway)
 
 ArenaConfig.SpawnProtection = 3 -- seconds of force field after entering
 

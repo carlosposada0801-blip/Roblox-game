@@ -20,6 +20,9 @@ PlotConfig.PlotGap = 24 -- studs between neighbouring plots in one row
 PlotConfig.AisleWidth = 60 -- walkway between the two rows (the lobby spawn sits here)
 PlotConfig.Origin = Vector3.new(0, 0, 0) -- ground height and center of the whole layout
 
+-- Lobby spawn (world position). The middle of the aisle is the speedy walkway.
+PlotConfig.LobbySpawn = Vector3.new(-40, 0.5, 19)
+
 -- Where the owner appears, relative to the plot center
 PlotConfig.SpawnOffset = CFrame.new(0, 4, 42)
 

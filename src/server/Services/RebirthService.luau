@@ -28,9 +28,9 @@ local nameCache = {}
 -- Leaderboard ----------------------------------------------------------------
 
 local function buildBoard()
-	local position = Vector3.new(-24, 9, 0)
-	-- lookAt points the Front face toward +X, where the lobby spawn is
-	local boardCFrame = CFrame.lookAt(position, position + Vector3.new(1, 0, 0))
+	local position = Vector3.new(0, 9, 24)
+	-- Beside the walkway; lookAt points the Front face toward the walkway (-Z)
+	local boardCFrame = CFrame.lookAt(position, position + Vector3.new(0, 0, -1))
 
 	local board = Instance.new("Part")
 	board.Name = "RebirthLeaderboard"

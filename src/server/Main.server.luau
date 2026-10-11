@@ -12,6 +12,7 @@ local Services = script.Parent.Services
 
 local SERVICE_ORDER = {
 	"Net",
+	"SceneryService",
 	"DataService",
 	"PlotService",
 	"EconomyService",
