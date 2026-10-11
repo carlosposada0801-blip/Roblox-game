@@ -39,7 +39,7 @@ function RebirthPanel.build()
 		TextWrapped = true,
 		TextColor3 = Theme.SubText,
 		MaxTextSize = 18,
-		Text = "Reset your cash and factory for a permanent cash boost.\nYou keep your workers, robots, Prototypes and game passes.",
+		Text = "Reset your cash and factory for a permanent cash boost.\nYou keep robots, Prototypes, workers, pets, passes, skins, badges, your yard and the Sky Factory.",
 		Parent = content,
 	})
 
@@ -72,7 +72,7 @@ function RebirthPanel.build()
 		local nextMultiplier = RebirthConfig.GetMultiplier(rebirths.Value + 1)
 		UIKit.confirm(
 			"Rebirth?",
-			("You'll lose %s and every item in your factory, and earn x%s cash forever."):format(Format.cash(cash.Value), tostring(nextMultiplier)),
+			("❌ LOSE: %s cash, factory items, upgrades\n✅ KEEP: robots, Prototypes, workers, pets, game passes, skins, badges, yard, Sky Factory\n⭐ GAIN: x%s cash forever!"):format(Format.cash(cash.Value), tostring(nextMultiplier)),
 			"Rebirth!",
 			function()
 				if cash.Value >= cost then

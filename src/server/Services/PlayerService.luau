@@ -35,6 +35,7 @@ local function onPlayerAdded(player: Player)
 	if player.Parent == nil then
 		return
 	end
+	MonetizationService:ApplyTags(player)
 
 	EconomyService:SetupPlayer(player)
 

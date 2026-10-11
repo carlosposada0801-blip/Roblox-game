@@ -25,7 +25,6 @@ local YardController = {}
 local selected -- piece type, or "Remove", or nil when not building
 local rotation = 0
 local ghost, ghostArrow, toolbar, toolbarLabel, removeButton
-local renderConnection
 
 local function myFloor()
 	local plots = workspace:FindFirstChild("Plots")
@@ -127,11 +126,11 @@ function YardController:Start()
 	ghostArrow.Size = Vector3.new(1.6, 0.6, 0.6)
 	ghostArrow.Parent = ghost
 
-	-- Toolbar (bottom of the screen, above the jump button area on phones)
+	-- Toolbar: bottom center on PC; top right on phones (clear of the thumbstick and jump button)
 	toolbar = UIKit.card({
 		Name = "YardToolbar",
-		AnchorPoint = Vector2.new(0.5, 1),
-		Position = UDim2.new(0.5, 0, 1, -110),
+		AnchorPoint = if UIKit.IsTouch then Vector2.new(1, 0) else Vector2.new(0.5, 1),
+		Position = if UIKit.IsTouch then UDim2.new(1, -10, 0, 130) else UDim2.new(0.5, 0, 1, -110),
 		Size = UDim2.fromOffset(620, 110),
 		BackgroundColor3 = Theme.Background,
 		Visible = false,
@@ -162,7 +161,7 @@ function YardController:Start()
 		end
 	end)
 
-	renderConnection = RunService.RenderStepped:Connect(function()
+	RunService.RenderStepped:Connect(function()
 		if not selected then
 			return
 		end

@@ -27,10 +27,21 @@ MorePanel.Entries = {
 }
 
 function MorePanel.build()
-	local window, content = UIKit.window("☰ MORE", Theme.Cyan, Vector2.new(480, 330))
-	UIKit.create("UIGridLayout", { CellSize = UDim2.fromOffset(140, 110), CellPadding = UDim2.fromOffset(10, 10), HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder, Parent = content })
+	local window, content = UIKit.window("☰ MORE", Theme.Cyan, Vector2.new(620, 480))
+	local grid = UIKit.create("ScrollingFrame", {
+		Name = "Grid",
+		Size = UDim2.fromScale(1, 1),
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		ScrollBarThickness = 6,
+		AutomaticCanvasSize = Enum.AutomaticSize.Y,
+		CanvasSize = UDim2.new(),
+		Parent = content,
+	}, {
+		UIKit.create("UIGridLayout", { CellSize = UDim2.fromOffset(132, 96), CellPadding = UDim2.fromOffset(10, 10), HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder }),
+	})
 	for index, entry in ipairs(MorePanel.Entries) do
-		local button = UIKit.button({ Name = entry.Name, Color = entry.Color, Text = entry.Icon .. "\n" .. string.upper(entry.Name), LayoutOrder = index, Parent = content }, function()
+		local button = UIKit.button({ Name = entry.Name, Color = entry.Color, Text = entry.Icon .. "\n" .. string.upper(entry.Name), LayoutOrder = index, Parent = grid }, function()
 			if MorePanel.OnOpen then
 				MorePanel.OnOpen(entry.Name)
 			end

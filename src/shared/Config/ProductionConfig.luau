@@ -10,7 +10,7 @@
 local ProductionConfig = {}
 
 ProductionConfig.BeltSpeed = 8 -- studs/second before conveyor upgrades and passes
-ProductionConfig.MaxDropsPerPlot = 60 -- droppers pause while a plot has this many items
+ProductionConfig.MaxDropsPerPlot = 80 -- droppers pause while a plot has this many items (all floors + Sky Factory)
 ProductionConfig.DropLifetime = 90 -- seconds before a stuck item is cleaned up (Debris)
 ProductionConfig.CashPadCooldown = 0.5
 

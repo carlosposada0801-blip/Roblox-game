@@ -1,7 +1,7 @@
 --[[
 	ChatController
-	Adds [Crew] and title tags in front of chat messages, using the
-	sender's attributes (CrewName, Title). Works with TextChatService.
+	Adds [👑 VIP], [Crew] and title tags in front of chat messages, using the
+	sender's attributes (Pass_VIPFloor, CrewName, Title). Works with TextChatService.
 ]]
 
 local Players = game:GetService("Players")
@@ -16,6 +16,9 @@ function ChatController:Start()
 		local sender = source and Players:GetPlayerByUserId(source.UserId)
 		if sender then
 			local prefix = ""
+			if sender:GetAttribute("Pass_VIPFloor") then
+				prefix ..= '<font color="#FFC832">[👑 VIP]</font> '
+			end
 			local crew = sender:GetAttribute("CrewName")
 			if crew and crew ~= "" then
 				prefix ..= ('<font color="#4FA3FF">[%s]</font> '):format(crew)

@@ -384,6 +384,14 @@ local function action(player, kind, x, y, pieceType, rotation)
 			end
 			existing.R = rotation -- same piece: just rotate it (free)
 		else
+			local count = 0
+			for _ in pairs(data.Yard) do
+				count += 1
+			end
+			if count >= YardConfig.MaxPieces then
+				Net:Notify(player, ("Your yard is full (%d pieces). Remove some first."):format(YardConfig.MaxPieces), "error")
+				return
+			end
 			if not EconomyService:TrySpend(player, config.Price) then
 				Net:Notify(player, ("%s costs %s."):format(config.Name, Format.cash(config.Price)), "error")
 				Net:Fire(player, "Sfx", "Denied")

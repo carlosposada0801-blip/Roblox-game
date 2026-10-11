@@ -26,6 +26,7 @@ YardConfig.CellSize = 4
 YardConfig.Gap = 6 -- studs between the plot's back edge and the yard
 
 YardConfig.MaxCrates = 40 -- per yard (lag control)
+YardConfig.MaxPieces = 120 -- per yard (each piece is a few parts)
 YardConfig.DropInterval = 0.35 -- seconds between crates (when there's room)
 YardConfig.TickRate = 10 -- simulation steps per second
 YardConfig.CrateLifetime = 120 -- a crate stuck this long is removed

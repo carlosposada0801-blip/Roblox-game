@@ -62,8 +62,9 @@ function TutorialController:Start()
 
 	local card = UIKit.card({
 		Name = "TutorialCard",
-		AnchorPoint = Vector2.new(0.5, 1),
-		Position = UDim2.new(0.5, 0, 1, -170),
+		-- Phones: near the top so it doesn't cover the thumbstick or jump button
+		AnchorPoint = if UIKit.IsTouch then Vector2.new(0.5, 0) else Vector2.new(0.5, 1),
+		Position = if UIKit.IsTouch then UDim2.new(0.5, 0, 0, 180) else UDim2.new(0.5, 0, 1, -170),
 		Size = UDim2.fromOffset(560, 80),
 		BackgroundColor3 = Theme.Background,
 		Parent = UIKit.root(),
@@ -101,7 +102,8 @@ function TutorialController:Start()
 	local bounce = RunService.RenderStepped:Connect(function()
 		local t = os.clock() * 5
 		worldArrow.StudsOffset = Vector3.new(0, 6 + math.abs(math.sin(t)) * 2, 0)
-		local menuButton = UIKit.root():FindFirstChild("Menu") and UIKit.root().Menu:FindFirstChild("Rebirth")
+		local menu = UIKit.root():FindFirstChild("Menu")
+		local menuButton = menu and menu:FindFirstChild("Rebirth")
 		if screenArrow.Visible and menuButton then
 			screenArrow.Position = UDim2.fromOffset(
 				menuButton.AbsolutePosition.X + menuButton.AbsoluteSize.X + 4 + math.abs(math.sin(t)) * 12,

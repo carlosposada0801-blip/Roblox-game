@@ -53,7 +53,7 @@ function BattlePanel.build()
 		Net.Fire("BattleAction", "Queue")
 	end)
 
-	local state = { Phase = "Idle" }
+	local state: any = { Phase = "Idle" }
 	local function update()
 		local stats = state.Stats or {}
 		statsLabel.Text = ("⭐ Your fighter:  ❤️ %d   ⚔️ %s   (+%d%%)"):format(stats.Health or BattleConfig.Stats.Health, tostring(stats.Attack or BattleConfig.Stats.Attack), math.floor((stats.Bonus or 0) * 100 + 0.5))

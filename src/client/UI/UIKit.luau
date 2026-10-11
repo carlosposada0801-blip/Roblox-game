@@ -6,10 +6,15 @@
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 
 local Sfx = require(script.Parent.Parent.Sfx)
 
 local UIKit = {}
+
+-- Phones and tablets: bigger buttons, and layouts that keep clear of the
+-- thumbstick (bottom left) and jump button (bottom right).
+UIKit.IsTouch = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 
 UIKit.Theme = {
 	Background = Color3.fromRGB(14, 18, 32),
@@ -49,10 +54,10 @@ function UIKit.root(): ScreenGui
 	local scale = Instance.new("UIScale")
 	scale.Parent = root
 	local camera = workspace.CurrentCamera
-	local touch = game:GetService("UserInputService").TouchEnabled
+	local touch = UIKit.IsTouch
 	local function rescale()
 		-- Phones are short in landscape; keep buttons big enough to tap
-		local minimum = if touch then 0.62 else 0.55
+		local minimum = if touch then 0.7 else 0.55
 		scale.Scale = math.clamp(camera.ViewportSize.Y / 850, minimum, 1.15)
 	end
 	camera:GetPropertyChangedSignal("ViewportSize"):Connect(rescale)
@@ -234,13 +239,14 @@ function UIKit.window(title: string, accent: Color3, size: Vector2?)
 		Parent = header,
 	})
 
+	local closeSize = if UIKit.IsTouch then 46 else 38 -- easy to hit with a thumb
 	local close = UIKit.button({
 		Name = "Close",
 		Text = "X",
 		Color = Theme.Red,
 		AnchorPoint = Vector2.new(1, 0.5),
-		Position = UDim2.new(1, -10, 0.5, 0),
-		Size = UDim2.fromOffset(38, 38),
+		Position = UDim2.new(1, -6, 0.5, 0),
+		Size = UDim2.fromOffset(closeSize, closeSize),
 		ZIndex = 2,
 		Parent = header,
 	}, function()
@@ -285,12 +291,29 @@ function UIKit.progressBar(props, color)
 	end
 end
 
+-- Largest scale (<= 1) at which the window fits on screen, so big windows
+-- never run off the edge of a phone or small laptop screen.
+function UIKit.fitScale(window): number
+	local camera = workspace.CurrentCamera
+	local rootScale = root and root:FindFirstChildOfClass("UIScale")
+	local uiScale = if rootScale then rootScale.Scale else 1
+	if not camera or uiScale <= 0 then
+		return 1
+	end
+	local viewport = camera.ViewportSize
+	local width = window.Size.X.Offset -- windows are sized in pixels
+	local height = window.Size.Y.Offset
+	-- Leave room for the top bar/HUD and some margin
+	return math.min(1, (viewport.X / uiScale * 0.94) / math.max(width, 1), (viewport.Y / uiScale * 0.84) / math.max(height, 1))
+end
+
 function UIKit.open(window)
 	local scale = window:FindFirstChild("OpenScale")
 	window.Visible = true
 	if scale then
-		scale.Scale = 0.85
-		TweenService:Create(scale, TweenInfo.new(0.18, Enum.EasingStyle.Back), { Scale = 1 }):Play()
+		local target = UIKit.fitScale(window)
+		scale.Scale = target * 0.85
+		TweenService:Create(scale, TweenInfo.new(0.18, Enum.EasingStyle.Back), { Scale = target }):Play()
 	end
 end
 
@@ -314,7 +337,7 @@ function UIKit.confirm(title: string, message: string, confirmText: string, onCo
 	local dialog = create("Frame", {
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 0.5),
-		Size = UDim2.fromOffset(440, 240),
+		Size = UDim2.fromOffset(460, 270),
 		BackgroundColor3 = Theme.Background,
 		ZIndex = 51,
 		Parent = overlay,
@@ -323,7 +346,7 @@ function UIKit.confirm(title: string, message: string, confirmText: string, onCo
 	UIKit.label({ Size = UDim2.new(1, 0, 0, 40), Font = Theme.Title, Text = title, MaxTextSize = 32, ZIndex = 52, Parent = dialog })
 	UIKit.label({
 		Position = UDim2.fromOffset(0, 46),
-		Size = UDim2.new(1, 0, 0, 90),
+		Size = UDim2.new(1, 0, 0, 120),
 		Text = message,
 		TextColor3 = Theme.SubText,
 		TextWrapped = true,

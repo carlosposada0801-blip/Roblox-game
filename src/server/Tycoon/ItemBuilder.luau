@@ -25,7 +25,7 @@ local SPECIAL_KEYS = {
 
 -- Lift pads: anyone touching the part is moved to the destination
 local function hookTeleport(part, destination)
-	local last = {}
+	local last = setmetatable({}, { __mode = "k" }) -- players who left can be garbage collected
 	part.Touched:Connect(function(hit)
 		local character = hit:FindFirstAncestorOfClass("Model")
 		local player = character and Players:GetPlayerFromCharacter(character)

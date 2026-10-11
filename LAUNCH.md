@@ -13,6 +13,20 @@ in Studio under **ReplicatedStorage → Shared → Config** (double-click to edi
 - [ ] **Creator Dashboard → your experience → Places → Server Size = 6**, one player per plot.
 - [ ] **Game Settings → Avatar:** R15 is recommended (the sword swing uses the default animations).
 
+## 0. Every placeholder ID to replace
+All of these are `0` right now. The game works with them at 0 (Studio simulates purchases),
+but they must be real before you go public.
+
+| Where (Config file) | What | How many |
+|---|---|---|
+| `MonetizationConfig.GamePasses` | `DoubleCash`, `AutoCollect`, `FasterConveyors`, `VIPFloor` | 4 game pass IDs |
+| `MonetizationConfig.Products` | `StarterPack`, `SmallCash`, `MediumCash`, `LargeCash`, `NextUpgrade`, `Prototype` | 6 developer product IDs |
+| `AchievementConfig` (`BadgeId = 0`) | At least: `FirstRobot`, `FirstRebirth`, `Rebirth10`, `Prototype`, `BossSlayer`, `SkyHigh`, `FirstTrade`, `Famous` (100 likes). Optional: the other 18 | 8 (up to 26) badge IDs |
+| `GroupConfig.GroupId` | Your Roblox group (community) ID: the number in its URL | 1 |
+| `AdminConfig.Admins` | UserIds of helpers allowed to use chat commands (optional) | any |
+| `SceneryConfig.Music.Tracks` | Music asset IDs you're allowed to use (optional) | any |
+| `CodesConfig.Codes` | Your own promo codes (the ones there are examples) | any |
+
 ## 2. Store items (real money)
 Create these at **Creator Dashboard → your experience → Monetization** and paste each ID into
 `MonetizationConfig`, replacing the `0`s.
@@ -23,7 +37,7 @@ Create these at **Creator Dashboard → your experience → Monetization** and p
 | Game pass | Auto-Collect | R$ 99 |
 | Game pass | Faster Conveyors | R$ 149 |
 | Game pass | VIP Floor | R$ 249 |
-| Developer product | Starter Pack | R$ 49 |
+| Developer product | Starter Pack ($25K + 30 min 2x Cash + Founder Gold skin) | R$ 49 |
 | Developer product | Cash Pack / Crate / Vault | R$ 25 / 99 / 399 |
 | Developer product | Instant Upgrade | R$ 49 |
 | Developer product | Prototype Robot | R$ 299 |
@@ -32,10 +46,17 @@ Create these at **Creator Dashboard → your experience → Monetization** and p
 - [ ] Test-buy each one in Studio. Studio purchases are free test purchases once the real IDs are in.
 
 ## 3. Badges
-- [ ] **Creator Dashboard → your experience → Associated Items → Badges.** Create a badge for the
-  achievements you want, such as "First Robot", "Millionaire", "Boss Slayer" and "Ascended".
+- [ ] **Creator Dashboard → your experience → Associated Items → Badges.** Create these 8 badges:
+  First Robot, Born Again (first rebirth), Rebirth Master (10 rebirths), Prototype!, Boss Slayer,
+  Sky High (Sky Factory), Deal Maker (first trade), Famous Factory (100 likes). Add more for any
+  other achievement you like. Players who already earned an achievement get its badge
+  automatically the next time they join.
 - [ ] Paste each badge ID into `AchievementConfig` (`BadgeId = 0` → your ID). Achievements
   without a badge ID still work in-game; they just don't award a Roblox badge.
+
+## 3b. Group reward
+- [ ] Create a group at roblox.com/communities/create, then paste its ID into `GroupConfig.GroupId`.
+  Members get a one-time cash gift and +10% cash forever. Link the group on your game page.
 
 ## 4. Earning money (no setup needed)
 - **Premium Payouts:** Roblox automatically pays you based on how long Premium members play.

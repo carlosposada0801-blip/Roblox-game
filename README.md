@@ -71,9 +71,9 @@ then Studio → Plugins → Rojo → Connect. `rojo build -o RobotFactoryTycoon.
 
 | Feature | How it works | Config |
 |---|---|---|
-| 🎁 Daily rewards | Popup on join, 7-day streak (day 7 = Prototype), resets if you miss a day | `DailyConfig` |
-| ⚡ Factory events | Every 3–5 min, 45 s long: Golden Scrap Rush, Power Surge, Cash Frenzy, Robot Parade. Banner and countdown for everyone | `EventConfig` |
-| 📋 Daily quests | 3 per day ("Sell 25 robots", "Hatch an egg"...) with progress bars and rewards | `QuestConfig` |
+| 🎁 Daily rewards | Popup on join, 7-day UTC streak: cash on days 1–6, a guaranteed rare Prototype on day 7; missing a day resets it | `DailyConfig` |
+| ⚡ Factory events | Every 10–20 min: Power Surge (3x speed, 30 s), Golden Rain (10x parts, 20 s), Malfunction (click the sparking machine to fix it), Cash Frenzy, Robot Parade. Banner, siren and countdown | `EventConfig` |
+| 📋 Daily quests | 3 per day ("Build 50 robots", "Collect cash 20 times", "Win 1 robot battle"...) with progress bars; rewards are cash, robots or short boosts | `QuestConfig` |
 | ⬆️ Upgrades | Walk up to a dropper or machine and press **E** to level it up (max Lv 5). Resets on rebirth | `UpgradeConfig` |
 | 🎲 Robot rarities | Every robot rolls Common → Legendary (x1 to x10 value), with glow, sparkles and a name tag | `RarityConfig` |
 | 📖 Collection book | 40 robot types (rarity × paint color). Each one you sell = +1% cash forever | `RarityConfig` |
@@ -86,7 +86,7 @@ then Studio → Plugins → Rojo → Connect. `rojo build -o RobotFactoryTycoon.
 | 🏢 3rd floor | After **5 rebirths**: lift pads from the 2nd floor, Plasma Droppers, Fusion Reactor and Mega Assembler | `ItemConfig` |
 | ⚔️ Weapons and PvP | Unlock weapons in the **Armory**: Robo Sword, Laser Blaster, Plasma Hammer, Shock Rifle, Rocket Launcher, and the Prototype Cannon (free with a Prototype). They work in the arena, or anywhere when both players switch **PvP on**. Hits are checked by the server | `WeaponConfig` |
 | 🌌 Galaxy Egg | A third, pricier egg ($2.5M) with the Mythic **Quasar** pet (+350% cash) | `PetConfig` |
-| ☠️ Boss raids | Every 15 min the Omega Destroyer lands in the lobby; everyone gets weapons (or click/tap it); damage share = loot | `BossConfig` |
+| ☠️ Boss raids | Every hour, after a 60 s countdown, the Omega Destroyer lands in the lobby; health scales with players; damage share = loot, plus a rare exclusive boss skin | `BossConfig` |
 | 🚨 Factory defense | Rogue drones raid cash pads and drain cash until you click/shoot them | `DefenseConfig` |
 | 🏁 Robot races | Enter your race bot, upgrade it with robots, prizes for the top 3; watch at the 🏁 portal | `RaceConfig` |
 | 📜 Contracts | Timed jobs with big rewards | `ContractConfig` |
@@ -101,6 +101,27 @@ then Studio → Plugins → Rojo → Connect. `rojo build -o RobotFactoryTycoon.
 | ⭐ Premium and Starter Pack | +10% cash for Roblox Premium; one-time Starter Pack product | `MonetizationConfig` |
 | 📊 Balance tool | `/balance` prints how long every purchase takes (admins/Studio) | `BalanceModel` |
 | 🎨 Look and feel | Hazard-striped plots, industrial gates with spinning gears, machine fire/sparks/paint effects, moving belt arrows, factory skyline with smokestacks, robot mascots, hologram title, sci-fi UI, confetti, screen flash on rebirth | `SceneryConfig`, `ItemConfig` |
+
+## v2.3: the big update
+
+| Feature | How it works | Config |
+|---|---|---|
+| 🥊 Robot Battle Arena | Queue your Prototype (More → Battle, or the terminal at the end of the lobby). 1v1 stat fights with lunges, crits and health bars; wins/losses saved and ranked on a lobby board; a Training Bot fights you if nobody else queues | `BattleConfig` |
+| 📦 Logistics Yard | A grid behind every factory. Place and rotate Conveyors, Speed Conveyors, Splitters, Sorters and Mergers (More → Yard) to route crates to the Seller or the Rare Buyer. Placement is checked on the server | `YardConfig` |
+| ☁️ Sky Factory | At 8 rebirths, a blue pad flies you to a floating island with its own machines (Sky Laser Cutter, AI Core Installer, Nano Painter, Quantum Assembler) that build Sky Androids and Titan Mechs. Saved separately, never reset | `SkyConfig`, `ItemConfig` (`World = "Sky"`) |
+| 🤖 Collector workers + slots | Collector Bots grab pad cash for you; more worker slots unlock with rebirths; bots walk to their machines | `WorkerConfig` |
+| ⏱️ Boosts | 2x Cash, Turbo Droppers, Lucky Line: from quests, codes and the Starter Pack; timers in the HUD | `BoostConfig` |
+| 🎟️ Codes | More → Codes. One use per player, optional expiry date | `CodesConfig` |
+| 👥 Group reward | Join your group: one-time cash + 10% cash forever. Shop → Join / Check | `GroupConfig` |
+| 🎒 Starter Pack popup | Pops up 3 minutes into the first visit and once in the second; never after buying | `MonetizationConfig.StarterOffer` |
+| 📅 Weekly board | Cash earned this week, resets Monday 00:00 UTC; top 3 get a title + skin on their next join | `LeaderboardConfig` |
+| 👍 Most Liked board | Global board of factory likes (likes also show on every gate) | `LeaderboardConfig` |
+| 🎨 Customize | Wall and machine paint, floors, a neon sign with your own text (filtered), and decorations; free, cash and VIP options | `CustomConfig` |
+| 🤖 Robot skins | Recolor every robot you build; exclusive skins from the Starter Pack, bosses, weekly prizes and codes; some are tradable | `CosmeticConfig.Skins` |
+| 🤝 Trading v2 | Trade tradable skins too; both sides saved instantly; every trade logged | `TradeConfig` |
+| ⚙️ Settings | Music, sound effects, screen shake, guide arrow (saved) | — |
+| 🎓 Tutorial v2 | Arrow points at the first 5 buttons, then the cash pad, then Rebirth; Skip button; progress saved | `TutorialConfig` |
+| 📱 Mobile | Menu moves to the top-left on phones, windows shrink to fit the screen, bigger close buttons | `UIKit` |
 
 ---
 
@@ -240,7 +261,8 @@ src/client/  -> StarterPlayerScripts.Client
 re-validated on the server. Item values live in server-side records, item parts are owned
 by the server, and buy buttons and cash pads are server touch handlers.
 
-**Lag control:** at most 60 items per plot (droppers pause at the cap). Every item gets a
+**Lag control:** at most 80 items per plot (droppers pause at the cap); Logistics Yard crates
+are simulated on a grid (no physics), max 40 per yard and 120 pieces per yard. Every item gets a
 90-second Debris lifetime, items that fall off the plot are destroyed, and one 20 Hz
 loop handles all plots.
 
@@ -259,12 +281,16 @@ loop handles all plots.
 | `/pass DoubleCash` | Grant a pass (`DoubleCash`, `AutoCollect`, `FasterConveyors`, `VIPFloor`) |
 | `/buy SmallCash` | Run a product through the receipt code (`SmallCash`, `MediumCash`, `LargeCash`, `NextUpgrade`, `Prototype`) |
 | `/rebirths 2` | Set your rebirths (2 unlocks the 2nd floor, 5 unlocks the 3rd) |
-| `/event GoldenRush` | Start an event (`GoldenRush`, `PowerSurge`, `CashFrenzy`, `RobotParade`) |
+| `/event GoldenRain` | Start an event (`PowerSurge`, `GoldenRain`, `Malfunction`, `CashFrenzy`, `RobotParade`) |
 | `/pet Omega` | Get a pet (`Bolt`, `Gear`, `Spark`, `Nova`, `Pulse`, `Omega`, `Celestia`) |
 | `/daily` | Make today's daily reward claimable again |
 | `/quests` | Finish all of today's quests |
 | `/balance 0` | Economy timeline at 0 rebirths |
-| `/boss` | Start a boss raid now |
+| `/boss` | Start a boss raid now (`/boss countdown` for the warning first) |
+| `/battle` | Start a robot battle now |
+| `/boost CashX2 5` | Give a boost (`CashX2`, `Turbo`, `Lucky`) |
+| `/offer` | Show the Starter Pack popup |
+| `/sky` | Unlock the Sky Factory and fly up |
 | `/drones` | Send rogue drones to your factory |
 | `/save` | Save now |
 | `/wipe` | Reset your save and kick you |
@@ -286,5 +312,5 @@ loop handles all plots.
    Test → Clients and Servers → 2 players.
 7. **Saving.** With API access on, stop and play again. Cash, items, workers and rebirths
    all come back.
-8. **Lag.** Leave it running a few minutes. The `Drops` folder in each plot stays at 60
+8. **Lag.** Leave it running a few minutes. The `Drops` folder in each plot stays at 80
    items or fewer.

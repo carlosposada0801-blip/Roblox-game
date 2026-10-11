@@ -65,6 +65,30 @@ end
 
 -- Game passes ----------------------------------------------------------------
 
+-- Gold "👑 VIP" tag over VIP pass owners' heads (the chat tag is added on the client)
+local function applyVIPTag(player)
+	local character = player.Character
+	local head = character and character:FindFirstChild("Head")
+	if not head or not player:GetAttribute("Pass_VIPFloor") or head:FindFirstChild("VIPTag") then
+		return
+	end
+	local tag = Instance.new("BillboardGui")
+	tag.Name = "VIPTag"
+	tag.Size = UDim2.fromOffset(90, 22)
+	tag.StudsOffset = Vector3.new(0, 4.8, 0)
+	tag.MaxDistance = 80
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.fromScale(1, 1)
+	label.BackgroundTransparency = 1
+	label.Font = Enum.Font.Sarpanch
+	label.TextScaled = true
+	label.TextColor3 = Color3.fromRGB(255, 200, 50)
+	label.TextStrokeTransparency = 0.1
+	label.Text = "👑 VIP"
+	label.Parent = tag
+	tag.Parent = head
+end
+
 local function applyPass(player, key)
 	if player:GetAttribute("Pass_" .. key) then
 		return
@@ -72,6 +96,7 @@ local function applyPass(player, key)
 	player:SetAttribute("Pass_" .. key, true)
 	-- EconomyService and ProductionService react to the attribute; the VIP floor is an item.
 	TycoonService:RefreshPassItems(player)
+	applyVIPTag(player)
 end
 
 -- Yields. Called by PlayerService before the tycoon is built.
@@ -217,8 +242,11 @@ local function requestPurchase(player, kind, key)
 		end
 	elseif kind == "Product" then
 		local product = MonetizationConfig.Products[key]
+		local data = DataService:GetData(player)
 		if not product then
 			return
+		elseif product.Kind == "StarterPack" and data and data.StarterPackBought then
+			Net:Notify(player, "You already have the Starter Pack!", "info")
 		elseif product.Id ~= 0 then
 			MarketplaceService:PromptProductPurchase(player, product.Id)
 		elseif RunService:IsStudio() then
@@ -252,9 +280,28 @@ function MonetizationService:Start()
 	end)
 
 	Net:On("RequestPurchase", requestPurchase, 1, 2)
+
+	-- VIP tags on every spawn
+	Players.PlayerAdded:Connect(function(player)
+		player.CharacterAdded:Connect(function(character)
+			character:WaitForChild("Head", 10)
+			applyVIPTag(player)
+		end)
+	end)
+	for _, player in ipairs(Players:GetPlayers()) do
+		player.CharacterAdded:Connect(function(character)
+			character:WaitForChild("Head", 10)
+			applyVIPTag(player)
+		end)
+	end
 	Players.PlayerMembershipChanged:Connect(function(player)
 		EconomyService:Refresh(player)
 	end)
+end
+
+-- Called after passes load (the character may already exist)
+function MonetizationService:ApplyTags(player: Player)
+	applyVIPTag(player)
 end
 
 -- Studio dev commands

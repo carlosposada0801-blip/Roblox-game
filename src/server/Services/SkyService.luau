@@ -69,7 +69,7 @@ local function teleport(player, cframe)
 end
 
 local function hookPad(pad, owner, destination)
-	local last = {}
+	local last = setmetatable({}, { __mode = "k" }) -- don't keep players who left alive
 	pad.Touched:Connect(function(hit)
 		local character = hit:FindFirstAncestorOfClass("Model")
 		local toucher = character and Players:GetPlayerFromCharacter(character)

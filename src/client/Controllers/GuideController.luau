@@ -85,8 +85,9 @@ function GuideController:Start()
 	local toggle
 	toggle = UIKit.button({
 		Name = "GuideToggle",
-		AnchorPoint = Vector2.new(0, 0.5),
-		Position = UDim2.new(0, 12, 0.5, 190),
+		AnchorPoint = if UIKit.IsTouch then Vector2.new(0, 0) else Vector2.new(0, 0.5),
+		-- Phones: under the menu block, away from the thumbstick
+		Position = if UIKit.IsTouch then UDim2.new(0, 10, 0, 256) else UDim2.new(0, 12, 0.5, 190),
 		Size = UDim2.fromOffset(48, 44),
 		Color = Theme.PanelLight,
 		Parent = UIKit.root(),

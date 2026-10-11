@@ -88,19 +88,22 @@ function MenuController:Start()
 
 	local root = UIKit.root()
 
+	-- PC: 2 columns down the left side. Phones/tablets: a wide 5x2 block in the
+	-- top-left corner, so nothing sits over the thumbstick (bottom left).
+	local touch = UIKit.IsTouch
 	local bar = UIKit.create("Frame", {
 		Name = "Menu",
-		AnchorPoint = Vector2.new(0, 0.5),
-		Position = UDim2.new(0, 12, 0.5, -24),
-		Size = UDim2.fromOffset(156, 362),
+		AnchorPoint = if touch then Vector2.new(0, 0) else Vector2.new(0, 0.5),
+		Position = if touch then UDim2.new(0, 10, 0, 110) else UDim2.new(0, 12, 0.5, -24),
+		Size = if touch then UDim2.fromOffset(5 * 74 + 4 * 6, 2 * 66 + 6) else UDim2.fromOffset(156, 362),
 		BackgroundTransparency = 1,
 		Parent = root,
 	}, {
 		UIKit.create("UIGridLayout", {
 			CellSize = UDim2.fromOffset(74, 66),
-			CellPadding = UDim2.fromOffset(8, 8),
+			CellPadding = if touch then UDim2.fromOffset(6, 6) else UDim2.fromOffset(8, 8),
 			SortOrder = Enum.SortOrder.LayoutOrder,
-			VerticalAlignment = Enum.VerticalAlignment.Center,
+			VerticalAlignment = if touch then Enum.VerticalAlignment.Top else Enum.VerticalAlignment.Center,
 		}),
 	})
 
