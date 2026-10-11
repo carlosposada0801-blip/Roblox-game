@@ -45,7 +45,7 @@ function BalanceModel.income(owned, rebirths)
 	local rarity = averageRarity()
 	local total = 0
 	for _, item in ipairs(ItemConfig.Items) do
-		if owned[item.Id] and item.Dropper and not item.GamePass then
+		if owned[item.Id] and item.Dropper and not item.GamePass and not item.World then
 			local stage = item.Dropper.Stage or "Scrap"
 			local value = item.Dropper.Value / item.Dropper.Interval
 			local floor = floorOf(item)
@@ -76,7 +76,8 @@ function BalanceModel.timeline(rebirths)
 	while true do
 		local best
 		for _, item in ipairs(ItemConfig.Items) do
-			if not owned[item.Id] and not item.GamePass and rebirths >= (item.MinRebirths or 0) then
+			-- Sky Factory items are a separate progression, not part of the rebirth loop
+			if not owned[item.Id] and not item.GamePass and not item.World and rebirths >= (item.MinRebirths or 0) then
 				local ready = true
 				for _, required in ipairs(item.Requires or {}) do
 					ready = ready and owned[required] == true

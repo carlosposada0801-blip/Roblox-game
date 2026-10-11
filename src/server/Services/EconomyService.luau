@@ -23,7 +23,7 @@ local BoostService, CosmeticService, CommunityService, LeaderboardService
 
 local EconomyService = {}
 
-local MIRRORED_STATS = { "PendingCash", "Robots", "RobotsBuilt", "Prototypes", "Ascensions" }
+local MIRRORED_STATS = { "PendingCash", "Robots", "RobotsBuilt", "Prototypes", "Ascensions", "BattleWins", "BattleLosses" }
 
 local function isValidAmount(amount)
 	return type(amount) == "number" and amount == amount and amount >= 0 and amount < math.huge

@@ -209,6 +209,37 @@ local function addRobotDetails(body, prototype, rarity)
 	end
 end
 
+-- Sky Factory robot types: bigger, recolored, with a name tag
+local function applyRobotType(part, robotType)
+	local style = ProductionConfig.RobotTypes[robotType]
+	if not style then
+		return
+	end
+	part.Size = Stages.Robot.Size * style.Scale
+	part.Color = style.Color
+	part.Material = style.Material
+	part:SetAttribute("RobotType", robotType)
+	local old = part:FindFirstChild("TypeTag")
+	if old then
+		old:Destroy()
+	end
+	local tag = Instance.new("BillboardGui")
+	tag.Name = "TypeTag"
+	tag.Size = UDim2.fromOffset(120, 24)
+	tag.StudsOffset = Vector3.new(0, 3.4, 0)
+	tag.MaxDistance = 70
+	local text = Instance.new("TextLabel")
+	text.Size = UDim2.fromScale(1, 1)
+	text.BackgroundTransparency = 1
+	text.Font = Enum.Font.Sarpanch
+	text.TextScaled = true
+	text.TextColor3 = style.Color
+	text.TextStrokeTransparency = 0
+	text.Text = style.Name
+	text.Parent = tag
+	tag.Parent = part
+end
+
 -- Creates an item part. Returns its record, or nil when the plot is full.
 -- `force` skips the per-plot cap (used for robots so finished work isn't lost).
 local function createDrop(st, stage, value, cframe, options)
@@ -232,6 +263,9 @@ local function createDrop(st, stage, value, cframe, options)
 
 	if stage == "Robot" then
 		addRobotDetails(part, options.Prototype, options.Rarity)
+		if options.RobotType then
+			applyRobotType(part, options.RobotType)
+		end
 		if options.Skin and not options.Prototype then
 			-- Robot skin cosmetic (CosmeticConfig.Skins): recolors the body, rarity eyes stay
 			part.Color = options.Skin.Color
@@ -263,6 +297,7 @@ local function createDrop(st, stage, value, cframe, options)
 		Prototype = options.Prototype,
 		Rarity = options.Rarity,
 		Golden = options.Golden,
+		RobotType = options.RobotType,
 	}
 
 	part.Parent = st.Plot.Model.Drops
@@ -336,11 +371,16 @@ local function spawnRobot(player, st, machine, value, color, paintName, visited)
 
 	local rarity = RobotBookService:RollRarity()
 	value *= rarity.ValueMultiplier
+	local robotType = machine.Item.Machine.RobotType
+	if robotType and ProductionConfig.RobotTypes[robotType] then
+		value *= ProductionConfig.RobotTypes[robotType].ValueMultiplier
+	end
 
 	local zone = machine.Zone
 	createDrop(st, "Robot", value, zone.CFrame * CFrame.new(zone.Size.X / 2 + 1.2, 0, 0), {
 		Force = true,
-		Skin = CosmeticService:GetSkin(player),
+		Skin = if robotType then nil else CosmeticService:GetSkin(player),
+		RobotType = robotType,
 		Color = color,
 		PaintName = paintName,
 		Prototype = prototype,
@@ -396,6 +436,13 @@ local function process(player, st, machine, record)
 	end
 
 	record.Value *= multiplier
+
+	-- Robot upgraders (Quantum Assembler): finished robots become a new type
+	if config.RobotType and record.Stage == "Robot" and ProductionConfig.RobotTypes[config.RobotType] then
+		record.Value *= ProductionConfig.RobotTypes[config.RobotType].ValueMultiplier
+		record.RobotType = config.RobotType
+		applyRobotType(part, config.RobotType)
+	end
 
 	if config.Output then
 		local style = Stages[config.Output]

@@ -18,6 +18,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local PlotConfig = require(Shared.Config.PlotConfig)
+local SkyConfig = require(Shared.Config.SkyConfig)
 local Signal = require(Shared.Util.Signal)
 
 local PlotService = {}
@@ -251,6 +252,7 @@ local function buildPlot(index, parent)
 		Id = index,
 		Model = model,
 		CFrame = plotCFrame, -- plot local space; use plot.CFrame * offset to place things
+		SkyCFrame = plotCFrame * CFrame.new(0, SkyConfig.Height, 0), -- Sky Factory island (SkyConfig)
 		SpawnCFrame = spawnCFrame,
 		AccentColor = color,
 		OwnerLabel = ownerLabel,

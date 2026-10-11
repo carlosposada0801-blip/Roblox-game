@@ -16,8 +16,12 @@
 	  /daily             make today's daily reward claimable again
 	  /quests            finish all of today's quests
 	  /balance [rebirths] print the economy timeline (how long each purchase takes)
-	  /boss              start a boss raid now
+	  /boss [countdown]  start a boss raid now (or with the 60s warning countdown)
 	  /drones            send rogue drones to your factory
+	  /battle            start a robot battle now (vs another player if one is queued, else a Training Bot)
+	  /boost <id> [min]  give a boost: CashX2, Turbo, Lucky
+	  /offer             show the Starter Pack popup
+	  /sky               unlock the Sky Factory (sets rebirths if needed)
 	  /save              force a save right now
 	  /wipe              reset your data to a new player's and kick you
 	  /help              list commands
@@ -131,8 +135,42 @@ function DevCommands:Init(services)
 		print(BalanceModel.report(tonumber(args[2]) or 0))
 	end
 
-	commands["/boss"] = function()
-		services.BossService:Spawn()
+	commands["/boss"] = function(_, args)
+		if args[2] == "countdown" then
+			services.BossService:Countdown(10)
+		else
+			services.BossService:Spawn()
+		end
+	end
+
+	commands["/battle"] = function(player)
+		local data = DataService:GetData(player)
+		if data.Prototypes < 1 then
+			services.EconomyService:AddStat(player, "Prototypes", 1)
+		end
+		local other
+		for _, candidate in ipairs(Players:GetPlayers()) do
+			local candidateData = candidate ~= player and DataService:GetData(candidate)
+			if candidateData and candidateData.Prototypes > 0 then
+				other = candidate
+				break
+			end
+		end
+		services.BattleService:DevStart(player, other)
+	end
+
+	commands["/boost"] = function(player, args)
+		print(services.BoostService:Give(player, args[2] or "CashX2", tonumber(args[3]) or 5) and "[Dev] Boost given" or "[Dev] Unknown boost. Try CashX2, Turbo, Lucky")
+	end
+
+	commands["/offer"] = function(player)
+		services.Net:Fire(player, "ShowOffer", "StarterPack")
+	end
+
+	commands["/sky"] = function(player)
+		if services.SkyService then
+			services.SkyService:DevUnlock(player)
+		end
 	end
 
 	commands["/drones"] = function(player)
@@ -150,7 +188,7 @@ function DevCommands:Init(services)
 	end
 
 	commands["/help"] = function()
-		print("[Dev] Commands: /cash, /robots, /unlockall, /prototype, /pass, /buy, /rebirths, /event, /pet, /daily, /quests, /balance, /boss, /drones, /save, /wipe, /help")
+		print("[Dev] Commands: /cash, /robots, /unlockall, /prototype, /pass, /buy, /rebirths, /event, /pet, /daily, /quests, /balance, /boss, /drones, /battle, /boost, /offer, /sky, /save, /wipe, /help")
 	end
 
 	local function hook(player)

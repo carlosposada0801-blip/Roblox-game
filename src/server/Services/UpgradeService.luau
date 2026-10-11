@@ -2,6 +2,7 @@
 	UpgradeService
 	Droppers and machines get an "Upgrade" prompt (walk up and press E / tap).
 	Levels are saved in data.Levels and reset on rebirth (UpgradeConfig).
+	Sky Factory items have their own upgrade path: data.Sky.Levels, kept through rebirths.
 	ProductionService asks GetDropperBoosts / GetMachineMultiplier for the effects.
 	Prompts are tagged OwnerOnly so the client hides them on other players' plots.
 ]]
@@ -16,9 +17,15 @@ local DataService, EconomyService, TycoonService, QuestService, Net
 
 local UpgradeService = {}
 
+-- The table this item's level is saved in
+local function levelsFor(data, itemId)
+	local item = TycoonService:GetItem(itemId)
+	return if item and item.World == "Sky" then data.Sky.Levels else data.Levels
+end
+
 local function getLevel(player, itemId)
 	local data = DataService:GetData(player)
-	return data and data.Levels[itemId] or 1
+	return data and levelsFor(data, itemId)[itemId] or 1
 end
 
 function UpgradeService:GetCost(item, level: number): number
@@ -104,7 +111,7 @@ local function attach(player, plot, item, model)
 			Net:Fire(player, "Sfx", "Denied")
 			return
 		end
-		data.Levels[item.Id] = level + 1
+		levelsFor(data, item.Id)[item.Id] = level + 1
 		updateVisuals(player, item, model, prompt, label)
 		QuestService:Track(player, "Upgrades", 1)
 		Net:Fire(player, "Sfx", "Purchase")

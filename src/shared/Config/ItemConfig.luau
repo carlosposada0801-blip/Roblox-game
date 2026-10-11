@@ -14,11 +14,15 @@
 	  Label       optional: true shows the DisplayName above the built item
 	  GamePass    optional: key from MonetizationConfig.GamePasses. The item has no
 	              button and is built automatically for owners of that pass.
+	  World       optional: "Sky" builds it on the Sky Factory island (SkyConfig).
+	              Sky items are saved in data.Sky, unlock with the Sky Factory and
+	              survive rebirths. Their Requires must be other Sky items.
 
 	Behavior (optional)
 	  Dropper   = { Interval = seconds, Value = cash, Stage = "Scrap" }
 	  Conveyor  = { SpeedMultiplier = 1.5 }   the fastest owned conveyor item sets the belt speed
-	  Machine   = { Accepts = { stages }, Output = stage, Multiplier = n, Paint = bool, PartsPerRobot = n }
+	  Machine   = { Accepts = { stages }, Output = stage, Multiplier = n, Paint = bool, PartsPerRobot = n,
+	                RobotType = "Android" }   RobotType: robots made/upgraded here become that type
 	  Collector = {}                          turns items into cash at its "Intake" part
 
 	Part definitions
@@ -55,6 +59,7 @@ end
 -- z and y let the same builders place things on the upper floor.
 
 local HAZARD = Color3.fromRGB(255, 200, 40)
+local SKY_BLUE = Color3.fromRGB(120, 200, 255)
 
 local function dropper(x, color, z, y)
 	z, y = z or BELT_Z, y or 0
@@ -615,6 +620,125 @@ local Items = {
 		Button = Vector3.new(26, 0, ROW_THIRD),
 		Dropper = { Interval = 1.2, Value = 600, Stage = "RobotPart" },
 		Parts = dropper(-32, Color3.fromRGB(40, 200, 110), UPPER_Z, THIRD_Y),
+	},
+
+	-- Sky Factory (World = "Sky": built on the floating island, saved in data.Sky,
+	-- kept through rebirths; unlocks at SkyConfig.UnlockRebirths) ----------------
+	{
+		Id = "SkyConveyor",
+		DisplayName = "Sky Conveyor",
+		Category = "Conveyor",
+		World = "Sky",
+		Price = 0,
+		Requires = {},
+		Button = Vector3.new(-30, 0, ROW_CONVEYOR),
+		Conveyor = { SpeedMultiplier = 1 },
+		Parts = {
+			{ Name = "Frame", Size = Vector3.new(BELT_END - BELT_START, 1.5, 7), CFrame = at((BELT_START + BELT_END) / 2, 0.75, BELT_Z), Color = Color3.fromRGB(230, 235, 245), Material = Enum.Material.SmoothPlastic },
+			{ Name = "Belt", Size = Vector3.new(BELT_END - BELT_START, 0.2, 6), CFrame = at((BELT_START + BELT_END) / 2, BELT_TOP - 0.1, BELT_Z), Color = Color3.fromRGB(40, 60, 90), Material = Enum.Material.Fabric },
+			{ Name = "Rail", Size = Vector3.new(BELT_END - BELT_START, 1, 0.5), CFrame = at((BELT_START + BELT_END) / 2, BELT_TOP + 0.5, BELT_Z - 3.25), Color = SKY_BLUE, Material = Enum.Material.Neon },
+			{ Name = "Rail", Size = Vector3.new(BELT_END - BELT_START, 1, 0.5), CFrame = at((BELT_START + BELT_END) / 2, BELT_TOP + 0.5, BELT_Z + 3.25), Color = SKY_BLUE, Material = Enum.Material.Neon },
+		},
+	},
+	{
+		Id = "SkyCollector",
+		DisplayName = "Sky Collector",
+		Category = "Collector",
+		World = "Sky",
+		Price = 0,
+		Requires = { "SkyConveyor" },
+		Button = Vector3.new(-20, 0, ROW_CONVEYOR),
+		Collector = {},
+		Parts = {
+			{ Name = "Base", Size = Vector3.new(7, 1, 9), CFrame = at(44.5, 0.5, BELT_Z), Color = Color3.fromRGB(230, 235, 245), Material = Enum.Material.SmoothPlastic },
+			{ Name = "Wall", Size = Vector3.new(1, 4, 9), CFrame = at(47.5, 2.5, BELT_Z), Color = SKY_BLUE, Material = Enum.Material.Metal },
+			{ Name = "Intake", Size = Vector3.new(6, 3, 7), CFrame = at(44, 3, BELT_Z), Color = SKY_BLUE, Material = Enum.Material.Neon, Transparency = 0.6, CanCollide = false, Sparkles = Color3.fromRGB(180, 230, 255) },
+			{ Name = "CashPadRim", Size = Vector3.new(7, 0.3, 7), CFrame = at(44, 0.15, -6), Color = DARK_METAL, Material = Enum.Material.Metal },
+			{ Name = "CashPad", Size = Vector3.new(6, 0.4, 6), CFrame = at(44, 0.35, -6), Color = Color3.fromRGB(60, 200, 90), Material = Enum.Material.Neon, CanCollide = false },
+		},
+	},
+	{
+		Id = "CloudDropper1",
+		DisplayName = "Cloud Dropper",
+		Category = "Dropper",
+		World = "Sky",
+		Price = 1500000,
+		Requires = { "SkyCollector" },
+		Button = Vector3.new(-42, 0, ROW_PRODUCTION),
+		Dropper = { Interval = 1.5, Value = 800, Stage = "Metal" },
+		Parts = dropper(-42, Color3.fromRGB(150, 210, 255)),
+	},
+	{
+		Id = "SkyLaserCutter",
+		DisplayName = "Sky Laser Cutter",
+		Category = "Machine",
+		World = "Sky",
+		Price = 3000000,
+		Requires = { "CloudDropper1" },
+		Button = Vector3.new(-6, 0, ROW_PRODUCTION),
+		Label = true,
+		Machine = { Accepts = { "Metal" }, Output = "RobotPart", Multiplier = 3 },
+		Parts = machine(-6, Color3.fromRGB(255, 60, 120), laser(-6)),
+	},
+	{
+		Id = "AICoreInstaller",
+		DisplayName = "AI Core Installer",
+		Category = "Machine",
+		World = "Sky",
+		Price = 6000000,
+		Requires = { "SkyLaserCutter" },
+		Button = Vector3.new(24, 0, ROW_PRODUCTION),
+		Label = true,
+		-- Builds Sky Androids: a new robot type worth much more (ProductionConfig.RobotTypes)
+		Machine = { Accepts = { "RobotPart" }, Output = "Robot", Multiplier = 4, PartsPerRobot = 2, RobotType = "Android" },
+		Parts = machine(24, Color3.fromRGB(0, 230, 255), aiCore(24)),
+	},
+	{
+		Id = "CloudDropper2",
+		DisplayName = "Cloud Dropper II",
+		Category = "Dropper",
+		World = "Sky",
+		Price = 12000000,
+		Requires = { "AICoreInstaller" },
+		Button = Vector3.new(-32, 0, ROW_PRODUCTION),
+		Dropper = { Interval = 1.2, Value = 1200, Stage = "Metal" },
+		Parts = dropper(-32, Color3.fromRGB(150, 210, 255)),
+	},
+	{
+		Id = "NanoPainter",
+		DisplayName = "Nano Painter",
+		Category = "Machine",
+		World = "Sky",
+		Price = 25000000,
+		Requires = { "CloudDropper2" },
+		Button = Vector3.new(10, 0, ROW_PRODUCTION),
+		Label = true,
+		Machine = { Accepts = { "RobotPart" }, Paint = true, Multiplier = 2 },
+		Parts = machine(10, Color3.fromRGB(255, 120, 220), paintSpray(10)),
+	},
+	{
+		Id = "StormDropper",
+		DisplayName = "Storm Dropper",
+		Category = "Dropper",
+		World = "Sky",
+		Price = 50000000,
+		Requires = { "NanoPainter" },
+		Button = Vector3.new(-20, 0, ROW_PRODUCTION),
+		Dropper = { Interval = 1, Value = 2500, Stage = "Metal" },
+		Parts = dropper(-20, Color3.fromRGB(90, 120, 255)),
+	},
+	{
+		Id = "QuantumAssembler",
+		DisplayName = "Quantum Assembler",
+		Category = "Machine",
+		World = "Sky",
+		Price = 120000000,
+		Requires = { "StormDropper" },
+		Button = Vector3.new(36, 0, ROW_PRODUCTION),
+		Label = true,
+		-- Upgrades finished androids into Titan Mechs on their way to the collector
+		Machine = { Accepts = { "Robot" }, Multiplier = 3, RobotType = "Titan" },
+		Parts = machine(36, Color3.fromRGB(255, 200, 40), assemblyRig(36)),
 	},
 
 	-- Game pass items (no button; built automatically for pass owners) -----------

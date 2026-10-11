@@ -54,4 +54,5 @@ return {
 	"YardAction", -- (action: "Place" | "Remove", x, y, pieceType, rotation)
 	"CustomAction", -- (action: "Buy" | "Equip" | "Sign", slotOrId, value)
 	"TutorialProgress", -- (step) or ("Skip")
+	"SkyAction", -- (action: "Go" | "Home")
 }

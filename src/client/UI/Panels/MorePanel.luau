@@ -12,6 +12,9 @@ local MorePanel = {}
 MorePanel.OnOpen = nil -- set by MenuController
 
 MorePanel.Entries = {
+	{ Name = "Battle", Icon = "🥊", Color = Theme.Purple, Panel = "BattlePanel" },
+	{ Name = "Yard", Icon = "📦", Color = Theme.Accent, Panel = "YardPanel" },
+	{ Name = "Sky", Icon = "☁️", Color = Theme.Cyan, Panel = "SkyPanel" },
 	{ Name = "Achievements", Icon = "🏅", Color = Theme.Accent, Panel = "AchievementsPanel" },
 	{ Name = "Style", Icon = "✨", Color = Theme.Pink, Panel = "CosmeticsPanel" },
 	{ Name = "Customize", Icon = "🎨", Color = Color3.fromRGB(255, 120, 160), Panel = "CustomizePanel" },

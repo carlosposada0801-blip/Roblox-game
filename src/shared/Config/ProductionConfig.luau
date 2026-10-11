@@ -41,6 +41,13 @@ ProductionConfig.Stages = {
 	},
 }
 
+-- Special robot types from Sky Factory machines (Machine.RobotType). Their
+-- value is multiplied on top of everything else, and they look different.
+ProductionConfig.RobotTypes = {
+	Android = { Name = "SKY ANDROID", ValueMultiplier = 5, Scale = 1.3, Color = Color3.fromRGB(150, 220, 255), Material = Enum.Material.Glass },
+	Titan = { Name = "TITAN MECH", ValueMultiplier = 3, Scale = 1.7, Color = Color3.fromRGB(255, 200, 40), Material = Enum.Material.Foil },
+}
+
 -- Random colors the Painter can apply (names are used by the Robot Collection Book)
 ProductionConfig.PaintColors = {
 	{ Name = "Red", Color = Color3.fromRGB(255, 60, 60) },

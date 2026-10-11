@@ -10,7 +10,9 @@
 	    for free, so the tycoon looks exactly like they left it.
 	  * Items with a GamePass field have no button. They are built whenever the
 	    player owns that pass (attribute Pass_<key>, set by MonetizationService).
-	  * ResetTycoon clears every bought item (used by rebirths).
+	  * ResetTycoon clears every bought item (used by rebirths). Sky Factory
+	    items (World = "Sky") are kept: they're saved in data.Sky.Unlocked,
+	    built on the island (plot.SkyCFrame) and rebuilt after the reset.
 
 	Later steps listen to ItemUnlocked to give items behavior (droppers,
 	conveyors, machines...).
@@ -21,6 +23,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local ItemConfig = require(Shared.Config.ItemConfig)
+local SkyConfig = require(Shared.Config.SkyConfig)
 local Signal = require(Shared.Util.Signal)
 local Format = require(Shared.Util.Format)
 local ItemBuilder = require(script.Parent.Parent.Tycoon.ItemBuilder)
@@ -62,7 +65,7 @@ local function validateConfig()
 			table.insert(items, item)
 
 			if item.Button then
-				local spot = tostring(item.Button)
+				local spot = (item.World or "Ground") .. tostring(item.Button)
 				if buttonSpots[spot] then
 					warn(("[ItemConfig] %s and %s use the same Button position"):format(buttonSpots[spot], item.Id))
 				end
@@ -105,9 +108,28 @@ end
 
 -- Helpers --------------------------------------------------------------------
 
+local function isSky(item)
+	return item.World == "Sky"
+end
+
+-- Where this item's ownership is saved: Sky items have their own list
+local function unlockedSet(data, item)
+	return if isSky(item) then data.Sky.Unlocked else data.Unlocked
+end
+
+local function skyOpen(data)
+	return data.SkyUnlocked == 1 or data.Rebirths >= SkyConfig.UnlockRebirths
+end
+
+-- The CFrame an item is built relative to (its plot, or the plot's sky island)
+local function baseFor(plot, item)
+	return if isSky(item) then plot.SkyCFrame else plot.CFrame
+end
+
 local function requirementsMet(data, item)
+	local owned = unlockedSet(data, item)
 	for _, requiredId in ipairs(item.Requires) do
-		if not data.Unlocked[requiredId] then
+		if not owned[requiredId] then
 			return false
 		end
 	end
@@ -115,11 +137,13 @@ local function requirementsMet(data, item)
 end
 
 -- Can this item be bought with cash right now?
--- MinRebirths items (the second floor) only appear after enough rebirths.
+-- MinRebirths items (the upper floors) only appear after enough rebirths;
+-- Sky items once the Sky Factory is unlocked.
 local function isAvailable(data, item)
 	return not item.GamePass
-		and not data.Unlocked[item.Id]
+		and not unlockedSet(data, item)[item.Id]
 		and data.Rebirths >= (item.MinRebirths or 0)
+		and (not isSky(item) or skyOpen(data))
 		and requirementsMet(data, item)
 end
 
@@ -141,7 +165,7 @@ end
 
 local function createButton(player, playerState, item)
 	local plot = playerState.Plot
-	local origin = plot.CFrame * CFrame.new(item.Button)
+	local origin = baseFor(plot, item) * CFrame.new(item.Button)
 
 	local model = Instance.new("Model")
 	model.Name = "Button_" .. item.Id
@@ -240,7 +264,7 @@ local function unlock(player, item, isRebuild)
 
 	-- Pass items are never saved: owning the pass is what builds them.
 	if not item.GamePass then
-		data.Unlocked[item.Id] = true
+		unlockedSet(data, item)[item.Id] = true
 	end
 
 	local button = playerState.Buttons[item.Id]
@@ -249,7 +273,12 @@ local function unlock(player, item, isRebuild)
 		playerState.Buttons[item.Id] = nil
 	end
 
-	local model = ItemBuilder.build(item, playerState.Plot)
+	local buildPlot = playerState.Plot
+	if isSky(item) then
+		-- Same plot record, but positioned on the sky island
+		buildPlot = setmetatable({ CFrame = playerState.Plot.SkyCFrame }, { __index = playerState.Plot })
+	end
+	local model = ItemBuilder.build(item, buildPlot)
 	if not isRebuild then
 		local center = model:GetBoundingBox()
 		Net:FireAll("Fx", "Confetti", center.Position)
@@ -287,7 +316,7 @@ local function setupPlayer(player, _profile, plot)
 	-- Rebuild owned items in config order
 	local rebuilt = 0
 	for _, item in ipairs(items) do
-		if data.Unlocked[item.Id] and not item.GamePass then
+		if unlockedSet(data, item)[item.Id] and not item.GamePass then
 			unlock(player, item, true)
 			rebuilt += 1
 		end
@@ -326,9 +355,9 @@ function TycoonService:TryPurchase(player: Player, itemId: string)
 		return false, "NotReady"
 	elseif not item then
 		return false, "UnknownItem"
-	elseif data.Unlocked[itemId] then
+	elseif unlockedSet(data, item)[itemId] then
 		return false, "Owned"
-	elseif not requirementsMet(data, item) or data.Rebirths < (item.MinRebirths or 0) then
+	elseif not isAvailable(data, item) then
 		return false, "Locked"
 	elseif not EconomyService:TrySpend(player, item.Price) then
 		return false, "TooExpensive"
@@ -396,8 +425,23 @@ function TycoonService:ResetTycoon(player: Player)
 
 	self.TycoonReset:Fire(player, playerState.Plot)
 
+	-- Sky Factory progress survives rebirths: build it again
+	for _, item in ipairs(items) do
+		if isSky(item) and data.Sky.Unlocked[item.Id] then
+			unlock(player, item, true)
+		end
+	end
 	buildPassItems(player)
 	refreshButtons(player)
+end
+
+-- Shows any buttons that just became available (e.g. the Sky Factory unlocking)
+function TycoonService:RefreshButtons(player: Player)
+	refreshButtons(player)
+end
+
+function TycoonService:IsSkyItem(item): boolean
+	return isSky(item)
 end
 
 function TycoonService:GetItem(itemId: string)
