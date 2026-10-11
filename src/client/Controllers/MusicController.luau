@@ -87,7 +87,7 @@ function MusicController:Start()
 	button = UIKit.button({
 		Name = "MusicToggle",
 		AnchorPoint = Vector2.new(0, 0.5),
-		Position = UDim2.new(0, 12, 0.5, 178),
+		Position = UDim2.new(0, 12, 0.5, 230),
 		Size = UDim2.fromOffset(92, 44),
 		Color = Theme.PanelLight,
 		Text = "🔊 Music",

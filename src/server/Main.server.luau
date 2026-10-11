@@ -22,6 +22,7 @@ local SERVICE_ORDER = {
 	"RebirthService",
 	"MonetizationService",
 	"ArenaService",
+	"SettingsService",
 	"PlayerService", -- keep last: it starts loading players
 }
 

@@ -17,4 +17,5 @@ return {
 	"DismissWorker", -- (workerId)
 	"RequestPurchase", -- (kind: "Pass" | "Product", key)
 	"ArenaAction", -- (action: "Leave" | "Deploy" | "Recall")
+	"SetSetting", -- (key, value) player preferences from DataConfig.Template.Settings
 }

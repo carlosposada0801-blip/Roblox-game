@@ -33,6 +33,9 @@ DataConfig.Template = {
 	RobotsBuilt = 0, -- lifetime robots sold
 	Prototypes = 0, -- Prototype robots owned (arena)
 	ProcessedReceipts = {}, -- [purchaseId] = os.time(), stops double grants
+	Settings = {
+		GuideArrow = true, -- arrow pointing at the next thing to buy
+	},
 }
 
 return DataConfig
