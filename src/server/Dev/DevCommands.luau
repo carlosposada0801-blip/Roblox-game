@@ -5,6 +5,7 @@
 
 	  /cash <amount>   add cash (default 1000)
 	  /save            force a save right now
+	  /unlockall       unlock every tycoon item for free
 	  /wipe            reset your data to a new player's and kick you
 	  /help            list commands
 ]]
@@ -16,6 +17,7 @@ local DevCommands = {}
 function DevCommands:Init(services)
 	local DataService = services.DataService
 	local EconomyService = services.EconomyService
+	local TycoonService = services.TycoonService
 
 	local commands = {}
 
@@ -30,13 +32,31 @@ function DevCommands:Init(services)
 		print(("[Dev] Save for %s: %s"):format(player.Name, ok and "OK" or "FAILED"))
 	end
 
+	commands["/unlockall"] = function(player)
+		local count = 0
+		local available = TycoonService:GetAvailableItems(player)
+		while #available > 0 do
+			local before = count
+			for _, item in ipairs(available) do
+				if TycoonService:GrantItem(player, item.Id) then
+					count += 1
+				end
+			end
+			if count == before then
+				break
+			end
+			available = TycoonService:GetAvailableItems(player)
+		end
+		print(("[Dev] Unlocked %d item(s) for %s"):format(count, player.Name))
+	end
+
 	commands["/wipe"] = function(player)
 		DataService:ResetData(player)
 		player:Kick("[Dev] Your data was wiped. Press Play again.")
 	end
 
 	commands["/help"] = function()
-		print("[Dev] Commands: /cash <amount>, /save, /wipe, /help")
+		print("[Dev] Commands: /cash <amount>, /save, /unlockall, /wipe, /help")
 	end
 
 	local function hook(player)

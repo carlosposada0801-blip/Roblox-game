@@ -7,6 +7,7 @@ local Controllers = script.Parent:WaitForChild("Controllers")
 
 local CONTROLLER_ORDER = {
 	"HudController",
+	"ButtonController",
 }
 
 for _, name in ipairs(CONTROLLER_ORDER) do

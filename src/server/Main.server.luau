@@ -14,6 +14,7 @@ local SERVICE_ORDER = {
 	"DataService",
 	"PlotService",
 	"EconomyService",
+	"TycoonService",
 	"PlayerService", -- keep last: it starts loading players
 }
 
