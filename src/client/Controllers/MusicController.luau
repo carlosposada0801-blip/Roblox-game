@@ -1,8 +1,11 @@
 --[[
 	MusicController
-	Background music from SceneryConfig.Music.Tracks: shuffled playlist,
-	fades between songs, skips any track that fails to load, and a
-	music on/off button under the side menu. Plays only for this player.
+	Background music, for this player only:
+	  * SceneryConfig.Music.Tracks (real songs): shuffled playlist, fades between
+	    songs, skips any track that fails to load.
+	  * If there are no tracks (or none load), the game's own original
+	    soundtrack (SceneryConfig.Music.Songs), played live by MusicSynth.
+	A music on/off button sits under the side menu.
 	On/off is saved (Settings > Music, attribute Setting_Music).
 ]]
 
@@ -14,6 +17,7 @@ local TweenService = game:GetService("TweenService")
 local SceneryConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("SceneryConfig"))
 local UIKit = require(script.Parent.Parent.UI.UIKit)
 local Net = require(script.Parent.Parent.Net)
+local MusicSynth = require(script.Parent.Parent.MusicSynth)
 
 local Theme = UIKit.Theme
 local Music = SceneryConfig.Music
@@ -82,11 +86,6 @@ end
 
 function MusicController:Start()
 	local tracks = Music.Tracks
-	if #tracks == 0 then
-		print("[Music] No tracks yet. Add some to SceneryConfig.Music.Tracks (see README).")
-		return
-	end
-
 	local button
 	button = UIKit.button({
 		Name = "MusicToggle",
@@ -112,7 +111,34 @@ function MusicController:Start()
 	player:GetAttributeChangedSignal("Setting_Music"):Connect(applySetting)
 	applySetting()
 
+	-- The original soundtrack: fades in, follows the mute setting note by note
+	local synthVolume = 0
+	local function playOriginalSoundtrack()
+		local songs = Music.Songs or {}
+		if #songs == 0 then
+			button.Visible = false
+			return
+		end
+		print("[Music] Playing the original soundtrack.")
+		while true do
+			for _, song in ipairs(shuffled(songs)) do
+				local started = os.clock()
+				MusicSynth.play(song, Music.SongBars or 32, function()
+					-- Fade in over FadeTime at the start of each song
+					local fade = math.clamp((os.clock() - started) / Music.FadeTime, 0, 1)
+					synthVolume = if muted then 0 else Music.Volume * 2 * fade
+					return synthVolume
+				end)
+				task.wait(1) -- short breath between songs
+			end
+		end
+	end
+
 	task.spawn(function()
+		if #tracks == 0 then
+			playOriginalSoundtrack()
+			return
+		end
 		while true do
 			local anyPlayed = false
 			for _, track in ipairs(shuffled(tracks)) do
@@ -121,8 +147,8 @@ function MusicController:Start()
 				end
 			end
 			if not anyPlayed then
-				warn("[Music] No tracks could be loaded; music is off.")
-				button.Visible = false
+				warn("[Music] None of the tracks in SceneryConfig.Music.Tracks loaded; playing the original soundtrack instead.")
+				playOriginalSoundtrack()
 				return
 			end
 		end

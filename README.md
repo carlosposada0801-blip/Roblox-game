@@ -179,7 +179,13 @@ never unlock, and buttons that share a spot.
 
 ### Adding music
 
-Use only audio you're allowed to use: tracks uploaded by **Roblox** in the Creator Store
+**The game already has music:** an original soundtrack of 4 songs (Assembly Line, Neon Night
+Shift, Sky Cruise, Robot Rush), played live note by note from sounds built into Roblox, so
+there's nothing to upload and no copyright issue. Edit or add songs in
+`SceneryConfig.Music.Songs` (tempo, chords, arpeggio, melody, drum patterns).
+
+To use real recorded songs instead, add them to `Music.Tracks` (they replace the original
+soundtrack; if none of them load, the original soundtrack plays). Use only audio you're allowed to use: tracks uploaded by **Roblox** in the Creator Store
 (licensed for use in Roblox experiences) or audio you uploaded yourself.
 
 1. In Studio: **View → Toolbox**, then open the **Creator Store** tab and choose **Audio**.
@@ -193,8 +199,9 @@ Use only audio you're allowed to use: tracks uploaded by **Roblox** in the Creat
    	{ Id = 2345678901, Name = "Chill Robots" },
    },
    ```
-5. Press Play. A 🔊 **Music** button appears under the side menu so players can mute.
-   Tracks that fail to load are skipped, with a warning in Output.
+5. Press Play. Tracks that fail to load are skipped, with a warning in Output.
+
+Players can mute music with the 🔊 button under the side menu or in **More → Settings** (saved).
 
 ---
 
